@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HoneyCloud | Secure Relay Setup</title>
+    <link rel="icon" type="image/png" href="static/assets/logo.png" />
+    <link rel="stylesheet" href="static/css/premium.css">
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="flex items-center justify-center min-h-screen p-4">
+    <div class="glass-card max-w-2xl w-full p-8 animate-fade-in">
+        <div class="text-center mb-8">
+            <h1 class="text-3xl font-black glow-text-cyan tracking-tight uppercase">SECURE RELAY CONFIGURATION</h1>
+            <p class="text-xs text-gray-500 uppercase tracking-[0.2em] mt-2">Initialize encrypted Telegram channel for real-time intel</p>
+        </div>
+
+        <div class="bg-white/5 border border-white/10 rounded-xl p-6 mb-8">
+            <h3 class="text-xs font-bold text-cyan-400 uppercase tracking-widest mb-4 flex items-center gap-2">
+                <span>🚀 INITIALIZATION PROTOCOL</span>
+            </h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-[11px] text-gray-400 leading-relaxed">
+                <div class="space-y-2">
+                    <p>1. Contact <code class="text-cyan-400">@BotFather</code> on Telegram</p>
+                    <p>2. Issue command: <code class="text-cyan-400">/newbot</code></p>
+                    <p>3. Capture the <span class="text-white font-bold">API ACCESS TOKEN</span></p>
+                </div>
+                <div class="space-y-2">
+                    <p>4. Secure your unique <span class="text-white font-bold">CHAT_ID</span></p>
+                    <p>5. Link the secure node below</p>
+                    <p>6. Verify signal integrity</p>
+                </div>
+            </div>
+        </div>
+
+        <form id="telegramForm" class="space-y-6">
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-[10px] font-bold text-gray-500 uppercase tracking-[0.2em] mb-2">Bot API Access Token</label>
+                    <input type="text" id="botToken" required
+                           class="w-full bg-white/5 border border-white/10 rounded-lg p-4 text-sm font-mono text-cyan-400 focus:outline-none focus:border-cyan-400 transition"
+                           placeholder="123456789:ABCdefGHIjklMNOpqrsTUVwxyz">
+                </div>
+
+                <div>
+                    <label class="block text-[10px] font-bold text-gray-500 uppercase tracking-[0.2em] mb-2">Target Secure Chat ID</label>
+                    <input type="text" id="chatId" required
+                           class="w-full bg-white/5 border border-white/10 rounded-lg p-4 text-sm font-mono text-cyan-400 focus:outline-none focus:border-cyan-400 transition"
+                           placeholder="123456789">
+                </div>
+            </div>
+
+            <div id="validationStatus" class="hidden p-4 rounded-lg text-xs font-bold uppercase tracking-widest border border-white/10"></div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <button type="button" id="validateBtn" class="btn-outline-cyan py-3 text-xs">Verify Integrity</button>
+                <button type="submit" id="saveBtn" class="btn-premium py-3 text-xs disabled:opacity-50" disabled>Finalize Link</button>
+            </div>
+
+            <div class="flex justify-between items-center pt-6 border-t border-white/5">
+                <button type="button" id="skipBtn" class="text-[10px] text-gray-600 hover:text-white uppercase tracking-widest transition">⏭ Bypass Setup</button>
+                <button type="button" id="testBtn" class="text-[10px] text-purple-400 hover:text-purple-300 uppercase tracking-widest transition disabled:opacity-20" disabled>🧪 Signal Test</button>
+            </div>
+        </form>
+
+        <div id="loadingIndicator" class="hidden mt-6 text-center">
+            <div class="inline-block animate-spin rounded-full h-4 w-4 border-b-2 border-cyan-400"></div>
+            <span class="ml-2 text-[10px] text-gray-500 uppercase tracking-widest">Processing Data Link...</span>
+        </div>
+    </div>
+
+    <script src="config.js"></script>
+    <script>
+        let isValidated = false;
+        const getHeaders = () => ({ 'Authorization': `Bearer ${localStorage.getItem('token')}`, 'Content-Type': 'application/json' });
+
+        const showStatus = (msg, type) => {
+            const el = document.getElementById('validationStatus');
+            el.classList.remove('hidden', 'text-green-400', 'text-red-400', 'text-blue-400');
+            el.innerHTML = msg;
+            el.classList.add(type === 'success' ? 'text-green-400' : type === 'error' ? 'text-red-400' : 'text-blue-400');
+        };
+
+        const setLoading = (show) => {
+            document.getElementById('loadingIndicator').classList.toggle('hidden', !show);
+            document.getElementById('telegramForm').style.opacity = show ? '0.5' : '1';
+            document.getElementById('telegramForm').style.pointerEvents = show ? 'none' : 'auto';
+        };
+
+        document.getElementById('validateBtn').addEventListener('click', async () => {
+            const botToken = document.getElementById('botToken').value.trim();
+            const chatId = document.getElementById('chatId').value.trim();
+            if (!botToken || !chatId) return showStatus('MISSING PARAMETERS', 'error');
+
+            setLoading(true);
+            try {
+                const res = await fetch(`${API_URL}/api/telegram/validate`, {
+                    method: 'POST',
+                    headers: getHeaders(),
+                    body: JSON.stringify({ bot_token: botToken, chat_id: chatId })
+                });
+                const data = await res.json();
+                if (data.status === 'success') {
+                    showStatus(`INTEGRITY VERIFIED: @${data.bot_username}`, 'success');
+                    isValidated = true;
+                    document.getElementById('saveBtn').disabled = false;
+                    document.getElementById('testBtn').disabled = false;
+                } else {
+                    showStatus(`VERIFICATION FAILED: ${data.error}`, 'error');
+                }
+            } catch (e) { showStatus('NETWORK FAILURE', 'error'); }
+            setLoading(false);
+        });
+
+        document.getElementById('telegramForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            setLoading(true);
+            try {
+                const res = await fetch(`${API_URL}/api/telegram/configure`, {
+                    method: 'POST',
+                    headers: getHeaders(),
+                    body: JSON.stringify({
+                        bot_token: document.getElementById('botToken').value.trim(),
+                        chat_id: document.getElementById('chatId').value.trim()
+                    })
+                });
+                if (res.ok) {
+                    showStatus('CONFIGURATION PERSISTED. ACCESSING CORE...', 'success');
+                    setTimeout(() => window.location.href = 'index.html', 1500);
+                }
+            } catch (e) { showStatus('PERSISTENCE ERROR', 'error'); }
+            setLoading(false);
+        });
+
+        document.getElementById('testBtn').addEventListener('click', async () => {
+            setLoading(true);
+            try {
+                const res = await fetch(`${API_URL}/api/telegram/test`, { method: 'POST', headers: getHeaders() });
+                if (res.ok) showStatus('SIGNAL TEST SUCCESSFUL', 'success');
+            } catch (e) { showStatus('SIGNAL FAILURE', 'error'); }
+            setLoading(false);
+        });
+
+        document.getElementById('skipBtn').addEventListener('click', async () => {
+            if (!confirm('BYPASS SECURE RELAY SETUP?')) return;
+            try {
+                await fetch(`${API_URL}/api/telegram/skip-setup`, { method: 'POST', headers: getHeaders() });
+                window.location.href = 'index.html';
+            } catch (e) {}
+        });
+
+        window.onload = () => { if (!localStorage.getItem('token')) window.location.href = 'login.html'; };
+    </script>
+</body>
+</html>

@@ -1,0 +1,453 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HoneyCloud | Monitoring Hub</title>
+    <link rel="icon" type="image/png" href="static/assets/logo.png" />
+    <link rel="stylesheet" href="static/css/premium.css?v=2">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    
+    <!-- Leaflet.js for Attack Map -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+    <style>
+        .chart-container {
+            height: 250px;
+            position: relative;
+        }
+        #attackMap {
+            height: 400px;
+            width: 100%;
+            border-radius: 12px;
+            background: #0a0a0a;
+            border: 1px solid rgba(0, 242, 255, 0.1);
+            filter: hue-rotate(180deg) brightness(0.8) contrast(1.2); /* Dark Sci-Fi Theme */
+        }
+        .leaflet-container {
+            background: #0a0a0a !important;
+        }
+        /* Pulse Animation for Map Pings */
+        @keyframes ping-animate {
+            0% { transform: scale(0.1); opacity: 1; }
+            100% { transform: scale(3); opacity: 0; }
+        }
+        .attack-ping {
+            width: 20px;
+            height: 20px;
+            background: rgba(0, 242, 255, 0.6);
+            border-radius: 50%;
+            position: absolute;
+            pointer-events: none;
+        }
+        .attack-ping::after {
+            content: '';
+            position: absolute;
+            top: -100%; left: -100%; width: 300%; height: 300%;
+            border: 2px solid #00f2ff;
+            border-radius: 50%;
+            animation: ping-animate 1.5s ease-out infinite;
+        }
+    </style>
+</head>
+<body class="p-4 lg:p-8">
+    <div class="scanline fixed inset-0 pointer-events-none z-50"></div>
+    
+    <!-- Back to Hub -->
+    <a href="index.html" class="inline-flex items-center gap-2 text-cyan-400 hover:text-white transition mb-6 text-xs uppercase tracking-widest relative z-10">
+        <span class="bg-cyan-400/10 px-2 py-1 rounded">←</span> RETURN TO HUB
+    </a>
+
+    <!-- Dashboard Header -->
+    <div class="flex flex-col lg:flex-row justify-between items-start lg:items-center mb-10 gap-6">
+        <div>
+            <h1 class="text-4xl font-black tracking-tighter glow-text-cyan">MONITORING HUB</h1>
+            <p class="text-xs text-gray-500 uppercase tracking-[0.3em] mt-1">Real-Time Threat Analytics & Combat Intelligence</p>
+        </div>
+        
+        <div class="flex gap-4">
+            <div class="glass-card px-4 py-2 flex items-center gap-3">
+                <div class="w-3 h-3 bg-green-400 rounded-full animate-pulse"></div>
+                <div class="text-[10px] text-gray-400 uppercase tracking-widest">Live Sync Status: <span class="text-white font-bold" id="apiStatus">ACTIVE</span></div>
+            </div>
+            <button id="toggleAudio" class="glass-card px-4 py-2 hover:bg-white/5 transition flex items-center gap-2">
+                <span class="text-xs uppercase tracking-widest text-gray-400">Audio Alerts</span>
+                <span id="audioIcon">🔊</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Analytics Grid -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
+        <!-- Attack Distribution Chart -->
+        <div class="glass-card p-6">
+            <h3 class="text-xs font-bold text-gray-500 uppercase tracking-widest mb-6">Attack Vectors (24H)</h3>
+            <div class="chart-container">
+                <canvas id="attackTypeChart"></canvas>
+            </div>
+        </div>
+
+        <!-- Severity Breakdown -->
+        <div class="glass-card p-6">
+            <h3 class="text-xs font-bold text-gray-500 uppercase tracking-widest mb-6">Threat Severity (Real-time)</h3>
+            <div class="chart-container">
+                <canvas id="severityChart"></canvas>
+            </div>
+        </div>
+
+        <!-- System Alerts Summary -->
+        <div class="glass-card p-6 border-l-4 border-orange-500">
+            <h3 class="text-xs font-bold text-orange-400 uppercase tracking-widest mb-6">Intelligence Briefing</h3>
+            <div class="space-y-6">
+                <div>
+                    <div class="text-[10px] text-gray-500 uppercase mb-1">Most Targeted Service</div>
+                    <div class="text-2xl font-bold text-white tracking-tight" id="topTarget">DEMO_ECOMMERCE</div>
+                </div>
+                <div>
+                    <div class="text-[10px] text-gray-500 uppercase mb-1">Primary Threat Source</div>
+                    <div class="text-2xl font-bold text-white tracking-tight" id="topSource">GLOBAL_EDGE</div>
+                </div>
+                <div class="pt-4 border-t border-white/5">
+                    <div class="flex justify-between items-end">
+                        <div>
+                            <div class="text-[10px] text-gray-500 uppercase">Total Incursions</div>
+                            <div class="stat-value text-3xl text-cyan-400" id="totalEventsCount">0</div>
+                        </div>
+                        <div class="text-right">
+                            <div class="text-[10px] text-gray-500 uppercase">Critical</div>
+                            <div class="stat-value text-3xl text-red-500" id="criticalCount">0</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Global Threat Matrix (Attack Map) -->
+    <div class="glass-card p-1 mb-8 overflow-hidden">
+        <div class="px-6 py-4 flex justify-between items-center bg-white/5 border-b border-white/5">
+            <h3 class="text-xs font-bold text-cyan-400 uppercase tracking-widest">Global Threat Matrix</h3>
+            <div class="flex gap-4 items-center">
+                <div class="flex items-center gap-2">
+                    <div class="w-2 h-2 bg-red-500 rounded-full"></div>
+                    <span class="text-[10px] text-gray-500 uppercase">Critical</span>
+                </div>
+                <div class="flex items-center gap-2 text-[10px] text-gray-500 uppercase">
+                    <span id="activeNodes">0</span> ACTIVE NODES
+                </div>
+            </div>
+        </div>
+        <div id="attackMap"></div>
+    </div>
+
+    <!-- Live Incursion Stream -->
+    <div class="glass-card p-6">
+        <div class="flex justify-between items-center mb-8 pb-4 border-b border-white/5">
+            <h3 class="text-lg font-bold tracking-tight glow-text-cyan uppercase">Live Incursion Stream</h3>
+            <div class="flex items-center gap-4">
+                <div class="text-[10px] text-gray-500 uppercase tracking-widest" id="lastUpdate">LAST SYNC: JUST NOW</div>
+                <button onclick="honey.refreshData()" class="btn-outline-cyan text-[10px] px-3 py-1">FORCE RE-SYNC</button>
+                <button onclick="clearDataCache()" class="btn-outline-red text-[10px] px-3 py-1 ml-2">PURGE INTELLIGENCE</button>
+            </div>
+        </div>
+        
+        <!-- Stream Table -->
+        <div class="overflow-x-auto">
+            <table class="w-full text-left">
+                <thead>
+                    <tr class="text-[10px] text-gray-500 uppercase tracking-[0.2em] border-b border-white/5">
+                        <th class="pb-4 font-normal">Timestamp</th>
+                        <th class="pb-4 font-normal">Incursion Type</th>
+                        <th class="pb-4 font-normal">Source Protocol</th>
+                        <th class="pb-4 font-normal">Origin Address</th>
+                        <th class="pb-4 font-normal">Severity Node</th>
+                        <th class="pb-4 font-normal text-right">Action</th>
+                    </tr>
+                </thead>
+                <tbody id="streamBody" class="text-sm">
+                    <!-- Populated by honey-core.js -->
+                    <tr>
+                        <td colspan="6" class="py-20 text-center text-gray-600 italic">Initializing data stream link...</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Intel Detail Modal -->
+    <div id="intelModal" class="fixed inset-0 bg-black/80 backdrop-blur-md z-[100] hidden flex items-center justify-center p-4">
+        <div class="glass-card w-full max-w-2xl overflow-hidden animate-zoom-in">
+            <div class="px-6 py-4 flex justify-between items-center border-b border-white/5 bg-white/5">
+                <h3 class="text-sm font-bold text-cyan-400 uppercase tracking-widest">Incursion Intelligence Report</h3>
+                <button onclick="closeIntelModal()" class="text-gray-500 hover:text-white transition text-xl">&times;</button>
+            </div>
+            <div class="p-8 space-y-6" id="modalContent">
+                <!-- Dynamic Content -->
+            </div>
+            <div class="px-6 py-4 bg-white/5 border-t border-white/5 text-right">
+                <button onclick="closeIntelModal()" class="btn-outline-cyan text-[10px] px-6 py-2">CLOSE REPORT</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Global Notifications -->
+    <div id="notifications" class="fixed top-6 right-6 z-50 space-y-4 pointer-events-none w-80"></div>
+
+    <script src="config.js"></script>
+    <script src="static/js/honey-core.js?v=4"></script>
+    <script>
+        // Charts Integration
+        let attackChart, severityChart;
+
+        window.updateCharts = (stats) => {
+            const ctxAttack = document.getElementById('attackTypeChart')?.getContext('2d');
+            const ctxSeverity = document.getElementById('severityChart')?.getContext('2d');
+
+            if (!ctxAttack || !ctxSeverity) return;
+
+            const serviceLabels = Object.keys(stats.events_by_service || {});
+            const serviceData = Object.values(stats.events_by_service || {});
+            
+            const sevLabels = Object.keys(stats.events_by_severity || {});
+            const sevData = Object.values(stats.events_by_severity || {});
+
+            // Attack Distribution
+            if (attackChart) attackChart.destroy();
+            attackChart = new Chart(ctxAttack, {
+                type: 'bar',
+                data: {
+                    labels: serviceLabels,
+                    datasets: [{
+                        label: 'Incursions',
+                        data: serviceData,
+                        backgroundColor: 'rgba(0, 242, 255, 0.1)',
+                        borderColor: '#00f2ff',
+                        borderWidth: 2,
+                        borderRadius: 8,
+                        hoverBackgroundColor: 'rgba(0, 242, 255, 0.4)',
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        y: { 
+                            beginAtZero: true, 
+                            grid: { color: 'rgba(255,255,255,0.03)' }, 
+                            ticks: { color: '#64748b', font: { size: 10, family: 'Space Grotesk' } } 
+                        },
+                        x: { 
+                            grid: { display: false }, 
+                            ticks: { color: '#64748b', font: { size: 10, family: 'Space Grotesk' } } 
+                        }
+                    }
+                }
+            });
+
+            // Severity Chart
+            if (severityChart) severityChart.destroy();
+            severityChart = new Chart(ctxSeverity, {
+                type: 'doughnut',
+                data: {
+                    labels: sevLabels,
+                    datasets: [{
+                        data: sevData,
+                        backgroundColor: ['#ef4444', '#f59e0b', '#3b82f6', '#10b981'],
+                        borderWidth: 0,
+                        hoverOffset: 10
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { 
+                        legend: { position: 'right', labels: { color: '#94a3b8', font: { size: 10 } } } 
+                    },
+                    cutout: '70%'
+                }
+            });
+        };
+
+        // Redefine render function for table view
+        HoneyDashboard.prototype.renderEventsFeed = function(container) {
+            const streamBody = document.getElementById('streamBody');
+            if (!streamBody) return;
+
+            if (this.events.length === 0) {
+                streamBody.innerHTML = '<tr><td colspan="6" class="py-10 text-center text-gray-600">Secure. No threats detected.</td></tr>';
+                return;
+            }
+
+            streamBody.innerHTML = this.events.map(event => {
+                const sevColor = event.severity === 'CRITICAL' ? 'text-red-500' : 
+                               event.severity === 'HIGH' ? 'text-orange-400' : 'text-blue-400';
+                
+                // Fix field mapping
+                const eventType = event.method && event.endpoint ? `${event.method} ${event.endpoint}` : 
+                                 event.command ? `CMD: ${event.command}` : 'Incursion Detected';
+                const serviceName = event.service || 'UNKNOWN_NODE';
+
+                return `
+                    <tr class="border-b border-white/5 hover:bg-white/5 transition group">
+                        <td class="py-4 text-gray-500 text-[11px] font-mono">${new Date(event.timestamp).toLocaleString()}</td>
+                        <td class="py-4 font-bold text-white">${eventType}</td>
+                        <td class="py-4 text-cyan-400 text-xs font-mono">${serviceName}</td>
+                        <td class="py-4 text-gray-400 text-xs">${event.source_ip}</td>
+                        <td class="py-4">
+                            <span class="flex items-center gap-2 ${sevColor} font-black text-xs">
+                                <span class="w-1.5 h-1.5 rounded-full bg-current ${event.severity === 'CRITICAL' ? 'animate-pulse' : ''}"></span>
+                                ${event.severity}
+                            </span>
+                        </td>
+                        <td class="py-4 text-right">
+                            <button onclick='openIntelModal(${JSON.stringify(event).replace(/'/g, "&#39;")})' class="text-xs text-cyan-400/50 hover:text-cyan-400 transition font-bold tracking-widest">INTEL →</button>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        };
+
+        window.openIntelModal = (event) => {
+            const modal = document.getElementById('intelModal');
+            const content = document.getElementById('modalContent');
+            if (!modal || !content) return;
+
+            const metadata = event.event_metadata || {};
+            const location = event.location || {};
+            
+            // Try to identify the attack type from multiple possible fields
+            let attackType = metadata.attack_classification || metadata.attack_type || event.ai_label || 'UNKNOWN';
+
+            // AI Mitigation Suggestions Map
+            const mitigationStrategies = {
+                'SQL Injection': '⚠️ Immediate Action: Sanitize all database inputs using parameterized queries or prepared statements. Implement an ORM where possible and enforce strict input validation at the API gateway level.',
+                'Brute Force': '🛡️ Recommended: Implement rate limiting (e.g., max 5 attempts per minute). Enforce strong password policies, enable Multi-Factor Authentication (MFA), and consider implementing account lockouts after repeated failures.',
+                'XSS': '🛑 Mitigation: Encode all user-supplied data before rendering it in the browser. Implement Content Security Policy (CSP) headers to restrict script execution sources. Use HttpOnly flags on sensitive cookies.',
+                'Command Injection': '🚨 Critical Fix: Avoid passing user input directly to system shells. If unavoidable, use safe APIs that bypass the shell completely. Implement strict allow-listing for expected inputs and drop privileges of the executing process.',
+                'Path Traversal': '🔍 Fix: Validate file paths using strict allow-lists. Do not allow characters like "../" in file requests. Normalize file paths and ensure the resolved absolute path is within the designated secure directory.'
+            };
+            
+            // Get specific strategy or fallback
+            let aiSuggestion = 'Implement Defense-in-Depth strategies. Monitor access logs closely, restrict network access to essential ports via firewalls, and keep all system components updated with the latest security patches.';
+            
+            // Look for keywords in the attack classification or payload to provide the best suggestion
+            for (const [key, strategy] of Object.entries(mitigationStrategies)) {
+                if (attackType.toLowerCase().includes(key.toLowerCase()) || 
+                   (event.payload && event.payload.toLowerCase().includes(key.toLowerCase())) ||
+                   (event.command && event.command.toLowerCase().includes(key.toLowerCase()))) {
+                    aiSuggestion = strategy;
+                    attackType = key; // Clean up the display name
+                    break;
+                }
+            }
+
+            content.innerHTML = `
+                <div class="grid grid-cols-2 gap-8">
+                    <div>
+                        <h4 class="text-[10px] text-gray-500 uppercase tracking-widest mb-4">Origin Intelligence</h4>
+                        <div class="space-y-4">
+                            <div>
+                                <div class="text-[10px] text-cyan-400/60 uppercase">IP Address</div>
+                                <div class="text-lg font-mono text-white">${event.source_ip}</div>
+                            </div>
+                            <div>
+                                <div class="text-[10px] text-cyan-400/60 uppercase">ISP / Organization</div>
+                                <div class="text-sm text-gray-300">${location.isp || 'N/A'}</div>
+                            </div>
+                            <div>
+                                <div class="text-[10px] text-cyan-400/60 uppercase">Geographic Node</div>
+                                <div class="text-sm text-gray-300">${location.city}, ${location.country} (${location.lat}, ${location.lng})</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div>
+                        <h4 class="text-[10px] text-gray-500 uppercase tracking-widest mb-4">Device Fingerprint</h4>
+                        <div class="space-y-4">
+                            <div>
+                                <div class="text-[10px] text-orange-400/60 uppercase">Attack Classification</div>
+                                <div class="text-sm font-bold text-white">${attackType}</div>
+                            </div>
+                            <div>
+                                <div class="text-[10px] text-orange-400/60 uppercase">User Agent</div>
+                                <div class="text-[11px] text-gray-400 break-all font-mono">${metadata.user_agent || 'Unknown'}</div>
+                            </div>
+                            <div>
+                                <div class="text-[10px] text-orange-400/60 uppercase">Method / Endpoint</div>
+                                <div class="text-sm text-gray-300 font-mono">${event.method} ${event.endpoint}</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- AI Mitigation Strategy -->
+                <div class="pt-6 border-t border-white/5">
+                    <h4 class="text-[10px] text-green-400 uppercase tracking-widest mb-4 flex items-center gap-2">
+                        <span>🤖 Nova-Byte AI Mitigation Strategy</span>
+                    </h4>
+                    <div class="bg-green-900/20 p-4 rounded border border-green-500/30 text-sm text-green-300/90 leading-relaxed">
+                        ${aiSuggestion}
+                    </div>
+                </div>
+
+                <div class="pt-6 border-t border-white/5">
+                    <h4 class="text-[10px] text-gray-500 uppercase tracking-widest mb-4">Raw Malicious Payload</h4>
+                    <div class="bg-black/50 p-4 rounded border border-white/5 font-mono text-[11px] text-cyan-400 overflow-x-auto">
+                        <pre>${JSON.stringify(JSON.parse(event.payload || '{}'), null, 2)}</pre>
+                    </div>
+                </div>
+            `;
+
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+        };
+
+        window.closeIntelModal = () => {
+            const modal = document.getElementById('intelModal');
+            if (modal) {
+                modal.classList.add('hidden');
+                modal.classList.remove('flex');
+            }
+        };
+
+        // Global notification override
+        window.showNotification = (message, type = 'info') => {
+            const container = document.getElementById('notifications');
+            const notif = document.createElement('div');
+            notif.className = `glass-card p-4 border-l-4 pointer-events-auto animate-fade-in ${
+                type === 'error' ? 'border-red-500 text-red-400' : 
+                type === 'success' ? 'border-green-500 text-green-400' : 'border-cyan-500 text-cyan-400'
+            }`;
+            notif.innerHTML = `<span class="text-xs font-bold uppercase tracking-widest">${message}</span>`;
+            container.appendChild(notif);
+            setTimeout(() => notif.remove(), 5000);
+        };
+        async function clearDataCache() {
+            if (!confirm("⚠️ WARN: This will permanently delete all attack intelligence from the secure database. Continue?")) return;
+            
+            try {
+                const token = localStorage.getItem('hc_token');
+                const response = await fetch(`${CONFIG.API_BASE}/api/events/clear`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+                
+                const result = await response.json();
+                if (response.ok) {
+                    window.showNotification(result.message || 'DATABASE PURGED', 'success');
+                    setTimeout(() => window.location.reload(), 1500);
+                } else {
+                    window.showNotification(result.detail || 'Access denied', 'error');
+                }
+            } catch (err) {
+                console.error('Clear cache error:', err);
+                window.showNotification('Could not connect to purge endpoint', 'error');
+            }
+        }
+    </script>
+</body>
+</html>
