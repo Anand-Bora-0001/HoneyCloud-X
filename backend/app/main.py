@@ -8,7 +8,7 @@ All business logic lives in:
   - services/     → Business logic
   - core/         → Security, config, caching
 """
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, HTMLResponse
 from fastapi.staticfiles import StaticFiles
@@ -64,9 +64,10 @@ from .api.routes.ml import router as ml_router
 from .api.routes.health import router as health_router
 from .api.routes.enhancements import router as enhancements_router
 from .api.routes.shadow_nodes import router as shadow_nodes_router
+from .api.routes import auth, events, investigation, recycle_bin
 
 app.include_router(auth_router)
-app.include_router(events_router)
+app.include_router(events.router)
 app.include_router(reports_router)
 app.include_router(telegram_router)
 app.include_router(alerts_router)
@@ -74,6 +75,11 @@ app.include_router(ml_router)
 app.include_router(health_router)
 app.include_router(enhancements_router)
 app.include_router(shadow_nodes_router)
+app.include_router(investigation.router)
+app.include_router(recycle_bin.router)
+
+from .deception_env.router import router as deception_router
+app.include_router(deception_router)
 
 # SaaS router (optional)
 try:
@@ -106,6 +112,13 @@ async def startup_event():
         logger.info("🤖 ML training service started")
     except ImportError:
         logger.info("ML trainer not available — basic mode")
+
+    # Start Background Reporting Scheduler
+    try:
+        from .services.scheduler import start_reporting_scheduler
+        start_reporting_scheduler()
+    except Exception as sched_err:
+        logger.error(f"Failed to start reporting scheduler: {sched_err}")
 
     # Load enhancement modules
     _load_enhancements()
@@ -161,35 +174,69 @@ _FRONTEND_DIR = _PROJECT_DIR / "frontend"
 os.makedirs("reports", exist_ok=True)
 
 if _FRONTEND_DIR.exists():
+    app.mount("/css", StaticFiles(directory=str(_FRONTEND_DIR / "css")), name="frontend_css")
+    app.mount("/js", StaticFiles(directory=str(_FRONTEND_DIR / "js")), name="frontend_js")
+    if (_FRONTEND_DIR / "assets").exists():
+        app.mount("/assets", StaticFiles(directory=str(_FRONTEND_DIR / "assets")), name="frontend_assets")
+    
+    # Keep the old /static just in case
     app.mount("/static", StaticFiles(directory=str(_FRONTEND_DIR)), name="frontend_static")
-
-    @app.get("/login.html", response_class=HTMLResponse, include_in_schema=False)
-    async def serve_login():
-        return FileResponse(str(_FRONTEND_DIR / "login.html"))
-
-    @app.get("/index.html", response_class=HTMLResponse, include_in_schema=False)
-    async def serve_index():
+    # Base routes for frontend application pages
+    @app.get("/")
+    async def root():
+        """Serve the landing page at root."""
         return FileResponse(str(_FRONTEND_DIR / "index.html"))
 
-    @app.get("/dashboard.html", response_class=HTMLResponse, include_in_schema=False)
+    @app.get("/login.html")
+    async def serve_login():
+        """Serve the login page."""
+        return FileResponse(str(_FRONTEND_DIR / "login.html"))
+
+    @app.get("/dashboard.html")
     async def serve_dashboard():
+        """Serve the dashboard page."""
         return FileResponse(str(_FRONTEND_DIR / "dashboard.html"))
 
-    @app.get("/pricing.html", response_class=HTMLResponse, include_in_schema=False)
-    async def serve_pricing():
-        return FileResponse(str(_FRONTEND_DIR / "pricing.html"))
+    @app.get("/attack-details.html")
+    async def serve_attack_details():
+        """Serve the attack details page."""
+        return FileResponse(str(_FRONTEND_DIR / "attack-details.html"))
 
-    @app.get("/telegram-setup.html", response_class=HTMLResponse, include_in_schema=False)
-    async def serve_telegram_setup():
-        return FileResponse(str(_FRONTEND_DIR / "telegram-setup.html"))
+    @app.get("/reports.html")
+    async def serve_reports():
+        """Serve the reports page."""
+        return FileResponse(str(_FRONTEND_DIR / "reports.html"))
+
+    @app.get("/recycle-bin.html")
+    async def serve_recycle_bin():
+        """Serve the recycle bin page."""
+        return FileResponse(str(_FRONTEND_DIR / "recycle-bin.html"))
+
+    @app.get("/settings.html")
+    async def serve_settings():
+        """Serve the settings page."""
+        return FileResponse(str(_FRONTEND_DIR / "settings.html"))
+
+    # Note: Catch-all to support development without exact path matching, if desired.
+    @app.get("/{filename}.html")
+    async def serve_html(filename: str):
+        file_path = _FRONTEND_DIR / f"{filename}.html"
+        if file_path.exists():
+            return FileResponse(str(file_path))
+        raise HTTPException(status_code=404, detail="Page not found")
 
     @app.get("/config.js", include_in_schema=False)
     async def serve_config_js():
-        return FileResponse(str(_FRONTEND_DIR / "config.js"), media_type="application/javascript")
-
-    @app.get("/", response_class=HTMLResponse, include_in_schema=False)
-    async def serve_root():
-        return FileResponse(str(_FRONTEND_DIR / "login.html"))
+        """Serve config dynamically reading from backend environment"""
+        api_base = os.getenv("VITE_API_URL", "")
+        content = f"""
+const CONFIG = {{
+    API_BASE: "{api_base}",
+    VERSION: "{settings.app_version}"
+}};
+console.log('[HoneyCloud] Dynamic Configuration Loaded: ' + (CONFIG.API_BASE || 'Relative'));
+"""
+        return HTMLResponse(content=content, media_type="application/javascript")
 
     logger.info(f"Frontend served from: {_FRONTEND_DIR}")
 else:

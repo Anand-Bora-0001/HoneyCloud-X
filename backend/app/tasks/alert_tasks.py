@@ -52,7 +52,7 @@ def send_telegram_alert_async(self, message: str, organization_id: int = None):
 def send_email_alert_async(self, to_emails: list, alert_type: str, event_data: dict, pdf_path: str = None):
     """Send email alert in background with retry"""
     try:
-        from ..email_service import email_service
+        from ..services.email_service import email_service
 
         if not email_service.is_configured():
             logger.info("Email service not configured — skipping background email")

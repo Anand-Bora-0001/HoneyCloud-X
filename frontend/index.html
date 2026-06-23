@@ -1,277 +1,413 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>HoneyCloud | Command Center</title>
-    <link rel="stylesheet" href="static/css/premium.css?v=2">
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-    <script src="config.js"></script>
-    <script>
-        // Fallback for file:// or if config.js failed
-        if (!window.CONFIG) {
-            window.CONFIG = {
-                API_BASE: window.location.protocol === 'file:' ? 'http://localhost:8000' : '',
-                VERSION: '2.0.0'
-            };
-        }
-    </script>
+    <title>HoneyCloud-X | AI-Powered Cloud Honeypot Platform</title>
+    <meta name="description" content="HoneyCloud-X Enterprise Deception Platform — deploy decoy honeypots globally, track adversary telemetry in real-time, and auto-classify threats using Machine Learning.">
+    <link rel="icon" type="image/svg+xml" href="assets/favicon.svg" />
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Manrope:wght@500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    
+    <link rel="stylesheet" href="css/design-system.css?v=3.0.0">
+    <script src="config.js?v=3.0.0"></script>
+    <script src="js/app.js?v=3.0.0"></script>
 </head>
-<body class="bg-black text-white min-h-screen font-sans selection:bg-cyan-500/30">
-    <!-- Background Elements -->
-    <div class="fixed inset-0 pointer-events-none opacity-20">
-        <div class="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,_#06b6d4_0%,_transparent_50%)] opacity-10"></div>
-        <div class="scanline"></div>
-    </div>
 
-    <!-- Main Navigation Bar -->
-    <nav class="sticky top-0 z-50 border-b border-white/5 bg-black/60 backdrop-blur-xl p-4">
-        <div class="max-w-[1600px] mx-auto flex justify-between items-center px-4">
-            <div class="flex items-center gap-4">
-                <div class="w-10 h-10 bg-cyan-500/10 rounded-xl border border-cyan-500/30 flex items-center justify-center">
-                    <img src="static/assets/logo.png" class="w-6 h-6 glow-icon-cyan" alt="HC">
+<body class="landing-body honeycomb-bg">
+    <!-- Navbar -->
+    <nav class="landing-nav" role="navigation" aria-label="Landing Navigation">
+        <div class="landing-nav-inner">
+            <a href="index.html" class="flex items-center gap-12" aria-label="HoneyCloud-X Home">
+                <div class="sidebar-brand-icon">
+                    <img src="assets/logo-sidebar.svg" alt="" width="22" height="22">
                 </div>
-                <div>
-                    <h1 class="text-2xl font-bold tracking-tighter glow-text-cyan">HONEYCLOUD <span class="font-light text-gray-500">v1.0</span></h1>
-                    <p class="text-[10px] uppercase tracking-[0.2em] text-gray-400">Security Command & Control</p>
-                </div>
+                <span style="font-family: 'Manrope', sans-serif; font-size: 1.125rem; font-weight: 800; color: var(--text-primary); letter-spacing: -0.02em;">
+                    HoneyCloud<span style="color:var(--honey)">-X</span>
+                </span>
+            </a>
+            
+            <div class="hidden md:flex gap-20">
+                <a href="#features" class="nav-link text-sm font-medium text-secondary">Features</a>
+                <a href="#architecture" class="nav-link text-sm font-medium text-secondary">Architecture</a>
+                <a href="#how-it-works" class="nav-link text-sm font-medium text-secondary">How It Works</a>
+                <a href="#pricing" class="nav-link text-sm font-medium text-secondary">Pricing</a>
+                <a href="#faq" class="nav-link text-sm font-medium text-secondary">FAQ</a>
             </div>
             
-            <div class="flex items-center gap-6">
-                <div class="hidden md:flex items-center gap-4 text-xs font-medium tracking-widest text-gray-500 uppercase">
-                    <span class="text-sm font-bold text-green-400">● ONLINE: <span id="userName">ADMIN</span></span>
-                    <span class="w-px h-4 bg-white/10"></span>
-                    <span id="apiStatus" class="text-cyan-400">CORE_LINK_STABLE</span>
-                </div>
-                <button onclick="terminateSession()" class="btn-outline-cyan px-4 py-2 text-[10px] uppercase tracking-widest">Terminate Session</button>
+            <div class="flex items-center gap-12">
+                <a href="login.html" class="btn btn-secondary btn-sm" style="border-radius: var(--radius);">Operator Login</a>
             </div>
         </div>
     </nav>
 
-    <div class="max-w-[1600px] mx-auto p-6 animate-fade-in">
-        <!-- Main Dashboard Layout -->
-        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
-            
-            <!-- Left Column: Primary Security Posture -->
-            <div class="lg:col-span-4 space-y-6">
-                <!-- Threat Level Gauge -->
-                <div class="glass-card p-8 text-center relative overflow-hidden group">
-                    <div class="scanline"></div>
-                    <h3 class="text-xs font-bold text-gray-500 uppercase tracking-[0.3em] mb-6">Threat Risk Index</h3>
-                    
-                    <div class="relative inline-block">
-                        <svg class="w-48 h-48 transform -rotate-90">
-                            <circle cx="96" cy="96" r="80" stroke="currentColor" stroke-width="8" fill="transparent" class="text-white/5"></circle>
-                            <circle id="threatDial" cx="96" cy="96" r="80" stroke="currentColor" stroke-width="12" fill="transparent" 
-                                stroke-dasharray="502" stroke-dashoffset="502"
-                                class="text-cyan-500 transition-all duration-1000 ease-out shadow-lg"></circle>
-                        </svg>
-                        <div class="absolute inset-0 flex flex-col items-center justify-center">
-                            <span id="threatPercent" class="text-5xl font-black tracking-tighter glow-text-cyan">0%</span>
-                            <span id="threatLabel" class="text-[10px] font-bold text-gray-500 uppercase mt-1">ELEVATED</span>
-                        </div>
-                    </div>
-                    
-                    <div class="mt-6 pt-6 border-t border-white/5 grid grid-cols-2 gap-4">
-                        <div class="text-left">
-                            <div class="text-[10px] text-gray-500 uppercase mb-1">Integrity</div>
-                            <div class="text-sm font-bold text-green-400">98.4%</div>
-                        </div>
-                        <div class="text-right">
-                            <div class="text-[10px] text-gray-500 uppercase mb-1">Response</div>
-                            <div class="text-sm font-bold text-cyan-400">12ms</div>
-                        </div>
-                    </div>
-                </div>
+    <!-- Hero Section -->
+    <header class="landing-hero animate-fade-in">
+        <div class="badge badge-high mb-16" style="background: var(--honey-glow); color: var(--honey); border-color: rgba(246,166,35,0.25);">
+            🐝 v3.0 Honey Intelligence Active
+        </div>
+        <h1>Next-Generation Cloud Honeypot<br>& AI Threat Intel</h1>
+        <p>Deploy decoy sensors globally in seconds. Detect, analyze, and classify attackers using machine learning before they touch your production systems.</p>
+        
+        <div class="btn-group">
+            <a href="login.html" class="btn btn-primary btn-lg" style="box-shadow: var(--shadow-glow);">Start Monitoring</a>
+            <a href="#" onclick="indexDemoLogin(event)" id="heroDemoBtn" class="btn btn-secondary btn-lg" style="background: var(--honey-glow); border-color: var(--border-active); color: var(--honey);">
+                View Demo
+            </a>
+            <a href="https://github.com/anandbora/HoneyCloud-X" target="_blank" rel="noopener noreferrer" class="btn btn-secondary btn-lg">
+                GitHub Repository
+            </a>
+            <a href="https://render.com/deploy" target="_blank" rel="noopener noreferrer" class="btn btn-secondary btn-lg">
+                Deploy Now
+            </a>
+        </div>
+    </header>
 
-                <!-- Full Monitor Entry Button -->
-                <button onclick="location.href='dashboard.html'" class="w-full relative group overflow-hidden rounded-2xl h-32">
-                    <img src="static/assets/threat_map_bg.png" class="absolute inset-0 w-full h-full object-cover opacity-30 group-hover:scale-110 transition duration-700">
-                    <div class="absolute inset-0 bg-gradient-to-r from-cyan-950/90 to-transparent flex items-center p-8">
-                        <div class="text-left">
-                            <h3 class="text-xl font-black tracking-tighter text-white group-hover:glow-text-cyan transition text-left">ENTER FULL WAR ROOM</h3>
-                            <p class="text-[10px] text-cyan-400 font-bold uppercase tracking-widest mt-1 text-left">Access Real-Time Threat Map &lt;&lt;</p>
-                        </div>
-                    </div>
-                    <div class="absolute inset-0 border-2 border-cyan-500/20 group-hover:border-cyan-500/50 rounded-2xl transition"></div>
-                </button>
+    <!-- Core Features -->
+    <section id="features" class="landing-section">
+        <div class="text-center mb-24">
+            <h2 class="mb-8" style="font-family: 'Manrope', sans-serif; font-size: 2rem;">Enterprise Threat Detection Fabric</h2>
+            <p class="text-secondary">AI-driven security intelligence designed to capture real exploits</p>
+        </div>
+
+        <div class="landing-feature-grid">
+            <div class="landing-feature-card">
+                <div class="feature-icon">🤖</div>
+                <h3>AI Threat Classification</h3>
+                <p>Machine learning models automatically classify attack patterns, identify payload intent, and flag zero-day vectors.</p>
             </div>
-
-            <!-- Middle Column: Live Intelligence -->
-            <div class="lg:col-span-5 space-y-6">
-                <!-- Primary Stats Bar -->
-                <div class="grid grid-cols-3 gap-4">
-                    <div class="glass-card p-4 border-b-2 border-cyan-500">
-                        <div class="text-[9px] text-gray-500 uppercase mb-1">Incursions</div>
-                        <div class="text-2xl font-black text-cyan-400" id="totalEventsCount">0</div>
-                    </div>
-                    <div class="glass-card p-4 border-b-2 border-red-500">
-                        <div class="text-[9px] text-gray-500 uppercase mb-1">Critical</div>
-                        <div class="text-2xl font-black text-red-500" id="criticalCount">0</div>
-                    </div>
-                    <div class="glass-card p-4 border-b-2 border-orange-500">
-                        <div class="text-[9px] text-gray-500 uppercase mb-1">Anomalies</div>
-                        <div class="text-2xl font-black text-orange-400" id="maliciousCount">0</div>
-                    </div>
-                </div>
-
-                <!-- Live Monitoring Feed -->
-                <div class="glass-card flex-1 flex flex-col h-[525px]">
-                    <div class="p-6 border-b border-white/5 flex justify-between items-center bg-white/5">
-                        <h3 class="text-sm font-bold tracking-[0.2em] text-cyan-400 uppercase">Live Intelligence Stream</h3>
-                        <div class="flex items-center gap-2">
-                            <span class="w-2 h-2 rounded-full bg-green-500 animate-ping"></span>
-                            <span class="text-[10px] text-green-400 font-mono">ACTIVE_FEED</span>
-                        </div>
-                    </div>
-                    <div id="liveEventsFeed" class="flex-1 overflow-y-auto p-4 space-y-3">
-                        <div class="h-full flex flex-col items-center justify-center space-y-4 opacity-30">
-                            <div class="w-12 h-12 border-2 border-cyan-500/30 border-t-cyan-500 rounded-full animate-spin"></div>
-                            <p class="text-xs uppercase tracking-widest">Establishing Secure Uplink...</p>
-                        </div>
-                    </div>
-                </div>
+            <div class="landing-feature-card">
+                <div class="feature-icon">🌐</div>
+                <h3>Global Threat Matrix</h3>
+                <p>Map attack coordinates and visualize botnet nodes globally in real-time on our interactive geographical map.</p>
             </div>
+            <div class="landing-feature-card">
+                <div class="feature-icon">📊</div>
+                <h3>Actionable Intelligence</h3>
+                <p>Export rich threat metrics, MITRE ATT&CK techniques, and raw payloads directly to standard formats like PDF, CSV, or Excel.</p>
+            </div>
+        </div>
+    </section>
 
-            <!-- Right Column: Network & Tools -->
-            <div class="lg:col-span-3 space-y-6">
-                <!-- Node Health -->
-                <div class="glass-card p-6 bg-gradient-to-br from-green-950/20 to-transparent">
-                    <div class="flex justify-between items-center mb-6">
-                        <h3 class="text-xs font-bold text-green-400 uppercase tracking-widest">Node Network</h3>
-                        <span class="text-[10px] text-gray-500 font-mono" id="lastUpdate">00:00:00</span>
-                    </div>
-                    <div class="space-y-4">
-                        <div class="flex items-center justify-between">
-                            <span class="text-xs text-gray-400 uppercase">Active Honeypots</span>
-                            <span class="text-xs font-bold text-white px-2 py-1 bg-white/5 rounded border border-white/10" id="activeNodes">0</span>
-                        </div>
-                        <div class="w-full bg-white/5 h-1 rounded-full overflow-hidden">
-                            <div class="bg-green-500 h-full w-[85%]"></div>
-                        </div>
-                        <div class="grid grid-cols-2 gap-2 pt-2">
-                            <div class="text-center p-2 bg-white/5 rounded">
-                                <div class="text-[9px] text-gray-500 uppercase">SSH</div>
-                                <div class="text-xs font-bold" id="sshCount">0</div>
-                            </div>
-                            <div class="text-center p-2 bg-white/5 rounded">
-                                <div class="text-[9px] text-gray-500 uppercase">HTTP</div>
-                                <div class="text-xs font-bold" id="httpCount">0</div>
-                            </div>
-                        </div>
-                    </div>
+    <!-- System Architecture -->
+    <section id="architecture" class="landing-section">
+        <div class="text-center mb-24">
+            <h2 class="mb-8" style="font-family: 'Manrope', sans-serif; font-size: 2rem;">System Architecture</h2>
+            <p class="text-secondary">Distributed sensing architecture designed for massive telemetry</p>
+        </div>
+
+        <div class="card p-24" style="background: rgba(17,24,39,0.8); border: 1px solid var(--border); border-radius: var(--radius-lg); backdrop-filter: blur(10px);">
+            <!-- SVG Architecture diagram -->
+            <svg viewBox="0 0 800 300" fill="none" xmlns="http://www.w3.org/2000/svg" class="w-full" style="max-height: 350px;">
+                <defs>
+                    <linearGradient id="gradAccent" x1="0" y1="0" x2="1" y2="0">
+                        <stop offset="0%" stop-color="#EF4444"/>
+                        <stop offset="100%" stop-color="#F6A623"/>
+                    </linearGradient>
+                    <linearGradient id="gradFlow" x1="0" y1="0" x2="1" y2="0">
+                        <stop offset="0%" stop-color="#F6A623" stop-opacity="0.8"/>
+                        <stop offset="100%" stop-color="#3B82F6" stop-opacity="0.8"/>
+                    </linearGradient>
+                    <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
+                        <feGaussianBlur stdDeviation="6" result="blur"/>
+                        <feComposite in="SourceGraphic" in2="blur" operator="over"/>
+                    </filter>
+                </defs>
+
+                <!-- Flow Connectors -->
+                <path d="M130 150 H 250" stroke="url(#gradAccent)" stroke-width="2" stroke-dasharray="4 4"/>
+                <path d="M370 70 L 480 120" stroke="#F6A623" stroke-width="1.5" stroke-opacity="0.5"/>
+                <path d="M370 150 H 480" stroke="#F6A623" stroke-width="1.5" stroke-opacity="0.5"/>
+                <path d="M370 230 L 480 180" stroke="#F6A623" stroke-width="1.5" stroke-opacity="0.5"/>
+                <path d="M600 150 H 710" stroke="url(#gradFlow)" stroke-width="2"/>
+                <path d="M600 150 L 670 230" stroke="#3B82F6" stroke-width="1.5" stroke-dasharray="2 2"/>
+
+                <!-- Attackers -->
+                <rect x="20" y="100" width="110" height="100" rx="10" fill="#111827" stroke="#EF4444" stroke-width="1.5"/>
+                <text x="75" y="135" fill="#EF4444" font-size="11" font-weight="700" text-anchor="middle" font-family="Inter, sans-serif">EXTERNAL IP</text>
+                <text x="75" y="150" fill="#EF4444" font-size="11" font-weight="700" text-anchor="middle" font-family="Inter, sans-serif">ATTACKERS</text>
+                <text x="75" y="175" fill="#64748B" font-size="9" text-anchor="middle" font-family="Inter, sans-serif">Bots, Scanners, Exploits</text>
+
+                <!-- Decoy Sensors -->
+                <rect x="250" y="45" width="120" height="50" rx="8" fill="#111827" stroke="#F6A623" stroke-width="1"/>
+                <text x="310" y="70" fill="#F1F5F9" font-size="11" font-weight="600" text-anchor="middle" font-family="Inter, sans-serif">Web Decoy</text>
+                <text x="310" y="83" fill="#64748B" font-size="8" text-anchor="middle" font-family="Inter, sans-serif">E-Commerce (T1190)</text>
+
+                <rect x="250" y="125" width="120" height="50" rx="8" fill="#111827" stroke="#F6A623" stroke-width="1"/>
+                <text x="310" y="150" fill="#F1F5F9" font-size="11" font-weight="600" text-anchor="middle" font-family="Inter, sans-serif">SSH Decoy</text>
+                <text x="310" y="163" fill="#64748B" font-size="8" text-anchor="middle" font-family="Inter, sans-serif">Terminal (T1078)</text>
+
+                <rect x="250" y="205" width="120" height="50" rx="8" fill="#111827" stroke="#F6A623" stroke-width="1"/>
+                <text x="310" y="230" fill="#F1F5F9" font-size="11" font-weight="600" text-anchor="middle" font-family="Inter, sans-serif">FTP Decoy</text>
+                <text x="310" y="243" fill="#64748B" font-size="8" text-anchor="middle" font-family="Inter, sans-serif">Remote (T1021)</text>
+
+                <!-- Processing Engine -->
+                <rect x="480" y="100" width="120" height="100" rx="12" fill="#111827" stroke="#F6A623" stroke-width="2" filter="url(#glow)"/>
+                <text x="540" y="130" fill="#F6A623" font-size="11" font-weight="700" text-anchor="middle" font-family="Inter, sans-serif">PROCESSING</text>
+                <text x="540" y="145" fill="#F1F5F9" font-size="10" font-weight="600" text-anchor="middle" font-family="Inter, sans-serif">ENGINE (AI)</text>
+                <text x="540" y="168" fill="#22C55E" font-size="8" font-weight="600" text-anchor="middle" font-family="Inter, sans-serif">● Random Forest ML</text>
+                <text x="540" y="180" fill="#64748B" font-size="8" text-anchor="middle" font-family="Inter, sans-serif">MITRE & GeoIP Mapping</text>
+
+                <!-- Operator Web Console -->
+                <rect x="710" y="55" width="80" height="50" rx="8" fill="#111827" stroke="#3B82F6" stroke-width="1"/>
+                <text x="750" y="80" fill="#F1F5F9" font-size="10" font-weight="600" text-anchor="middle" font-family="Inter, sans-serif">SOC Console</text>
+                <text x="750" y="92" fill="#64748B" font-size="7" text-anchor="middle" font-family="Inter, sans-serif">Real-Time Admin</text>
+
+                <!-- Telegram Alerting -->
+                <rect x="710" y="195" width="80" height="50" rx="8" fill="#111827" stroke="#3B82F6" stroke-width="1"/>
+                <text x="750" y="220" fill="#F1F5F9" font-size="10" font-weight="600" text-anchor="middle" font-family="Inter, sans-serif">Telegram</text>
+                <text x="750" y="232" fill="#64748B" font-size="7" text-anchor="middle" font-family="Inter, sans-serif">Instant Relay</text>
+            </svg>
+        </div>
+    </section>
+
+    <!-- Threat Intelligence & AI Detection -->
+    <section class="landing-section" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 40px;">
+        <div>
+            <h2 style="font-family: 'Manrope', sans-serif; font-size: 2rem; margin-bottom: 16px;">Real-Time Threat Intelligence & Geo-IP Mapping</h2>
+            <p class="text-secondary" style="margin-bottom: 20px; line-height: 1.6;">HoneyCloud-X identifies where attacks originate by checking real-time IP reputation registers and ASN data. Flag target domains, track autonomous systems (ASNs), and compile detailed network profiles.</p>
+            <div style="display: flex; flex-direction: column; gap: 12px; font-size: 0.875rem;">
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <span style="color: var(--honey);">✓</span>
+                    <span>Accurate City, Country, & Region Geolocation</span>
                 </div>
-
-                <!-- Strategic Tools -->
-                <div class="glass-card p-6 border-l-2 border-purple-500">
-                    <h3 class="text-xs font-bold text-purple-400 uppercase tracking-widest mb-4">Relay Systems</h3>
-                    <div class="space-y-3">
-                        <button onclick="relayToTelegram()" class="w-full p-4 bg-purple-600/10 hover:bg-purple-600/20 border border-purple-500/30 rounded-xl text-left group transition">
-                            <div class="text-[10px] text-purple-400 font-bold mb-1 tracking-widest uppercase">Telegram HQ</div>
-                            <div class="text-xs text-white opacity-60 group-hover:opacity-100 transition">PUSH INTELLIGENCE RELAY</div>
-                        </button>
-                        <button onclick="generateReport('pdf', false)" class="w-full p-4 bg-blue-600/10 hover:bg-blue-600/20 border border-blue-500/30 rounded-xl text-left group transition">
-                            <div class="text-[10px] text-blue-400 font-bold mb-1 tracking-widest uppercase">Tactical Report</div>
-                            <div class="text-xs text-white opacity-60 group-hover:opacity-100 transition">EXPORT STRATEGIC PDF</div>
-                        </button>
-                    </div>
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <span style="color: var(--honey);">✓</span>
+                    <span>AbuseIPDB reputation query checks</span>
                 </div>
-
-                <!-- Top Attack Origin -->
-                <div class="glass-card p-6 bg-red-950/10">
-                    <h3 class="text-xs font-bold text-red-400 uppercase tracking-widest mb-4">Top Attack Vector</h3>
-                    <div id="topVectorCard" class="flex items-center gap-4">
-                        <div class="w-10 h-10 bg-white/5 rounded-full flex items-center justify-center border border-white/10 text-xl">
-                            💀
-                        </div>
-                        <div>
-                            <div class="text-xs font-bold uppercase tracking-widest" id="topTarget">MONITORING...</div>
-                            <div class="text-[9px] text-gray-500 uppercase tracking-widest">HIGHEST FREQUENCY TARGET</div>
-                        </div>
-                    </div>
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <span style="color: var(--honey);">✓</span>
+                    <span>Mitre ATT&CK Taxonomy matching</span>
                 </div>
             </div>
         </div>
-
-        <!-- Footer -->
-        <footer class="mt-8 py-6 border-t border-white/5 text-center flex justify-between items-center">
-            <p class="text-gray-600 text-[9px] uppercase tracking-[0.5em]">HoneyCloud Advanced SIEM Platform | v2.1.0-STABLE</p>
-            <div class="flex gap-4">
-                <span class="text-[9px] text-cyan-400 uppercase tracking-widest font-bold">Encrypted Session</span>
-                <span class="text-[9px] text-gray-600 font-mono">NODE_HASH: 0x82...F92A</span>
-            </div>
-        </footer>
-    </div>
-
-    <!-- Global Notifications Container -->
-    <div id="notifications" class="fixed top-6 right-6 z-50 space-y-4 pointer-events-none w-80"></div>
-
-    <script src="static/js/honey-core.js?v=8"></script>
-    <script>
-        // Notification Helper
-        function showNotification(message, type = 'info') {
-            const container = document.getElementById('notifications');
-            if (!container) return;
-            const notif = document.createElement('div');
-            notif.className = `glass-card p-4 border-l-4 pointer-events-auto animate-fade-in ${
-                type === 'error' ? 'border-red-500 text-red-400' : 
-                type === 'success' ? 'border-green-500 text-green-400' : 'border-cyan-500 text-cyan-400'
-            }`;
-            notif.innerHTML = `
-                <div class="flex justify-between items-center">
-                    <span class="text-xs font-bold uppercase tracking-widest">${message}</span>
-                    <button onclick="this.parentElement.parentElement.remove()" class="text-gray-500 hover:text-white text-lg">&times;</button>
+        <div>
+            <h2 style="font-family: 'Manrope', sans-serif; font-size: 2rem; margin-bottom: 16px;">Advanced Random Forest Classifier</h2>
+            <p class="text-secondary" style="margin-bottom: 20px; line-height: 1.6;">Our integrated Machine Learning model classifies incursions as benign, anomaly, or malicious. Extracting payload features, entropy, and complexity metrics, the AI assigns reliable threat probability scores.</p>
+            <div class="card p-16" style="background: var(--bg-surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                    <span style="font-size: 0.75rem; font-weight: bold; font-family: 'JetBrains Mono', monospace;">RandomForestMLEngine</span>
+                    <span class="badge badge-low" style="color: var(--success); background: rgba(34,197,94,0.1); border-color: rgba(34,197,94,0.2);">v1.0.0</span>
                 </div>
-            `;
-            container.appendChild(notif);
-            setTimeout(() => notif.remove(), 5000);
+                <div class="font-mono text-xs text-secondary" style="line-height: 1.6;">
+                    Accuracy: 94.2%<br>
+                    F1-Score: 0.938<br>
+                    AUC-Score: 0.952<br>
+                    State: Operational
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- How It Works -->
+    <section id="how-it-works" class="landing-section">
+        <div class="text-center mb-24">
+            <h2 class="mb-8" style="font-family: 'Manrope', sans-serif; font-size: 2rem;">How It Works</h2>
+            <p class="text-secondary">Proactive defense cycle in four continuous steps</p>
+        </div>
+
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 24px;">
+            <div class="card p-20" style="background: var(--bg-surface); border: 1px solid var(--border); border-radius: var(--radius-lg);">
+                <div class="label mb-8" style="color: var(--honey);">Step 1</div>
+                <h4 class="mb-8">Deploy Decoys</h4>
+                <p class="text-secondary text-sm">Spin up SSH, HTTP, FTP, or E-Commerce honeypots across various cloud environments.</p>
+            </div>
+            <div class="card p-20" style="background: var(--bg-surface); border: 1px solid var(--border); border-radius: var(--radius-lg);">
+                <div class="label mb-8" style="color: var(--honey);">Step 2</div>
+                <h4 class="mb-8">Ingest Telemetry</h4>
+                <p class="text-secondary text-sm">Decoys catch scans and login attempts, instantly streaming event details to the SaaS hub.</p>
+            </div>
+            <div class="card p-20" style="background: var(--bg-surface); border: 1px solid var(--border); border-radius: var(--radius-lg);">
+                <div class="label mb-8" style="color: var(--honey);">Step 3</div>
+                <h4 class="mb-8">Analyze & Classify</h4>
+                <p class="text-secondary text-sm">The ML Engine evaluates threat scores, geo-location, and maps tactics to MITRE ATT&CK.</p>
+            </div>
+            <div class="card p-20" style="background: var(--bg-surface); border: 1px solid var(--border); border-radius: var(--radius-lg);">
+                <div class="label mb-8" style="color: var(--honey);">Step 4</div>
+                <h4 class="mb-8">Notify & Mitigate</h4>
+                <p class="text-secondary text-sm">Receive real-time alerts on Telegram or Email to trigger instant blocklist updates.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Strategic Licensing -->
+    <section id="pricing" class="landing-section">
+        <div class="text-center mb-24">
+            <h2 class="mb-8" style="font-family: 'Manrope', sans-serif; font-size: 2rem;">Strategic Licensing</h2>
+            <p class="text-secondary">Flexible tier structures built to scale with security operations</p>
+        </div>
+
+        <div class="pricing-grid">
+            <div class="pricing-card">
+                <div class="label mb-8">Recon Tier</div>
+                <div class="price">$29<span>/mo</span></div>
+                <ul>
+                    <li>5 Honeypot Clusters</li>
+                    <li>50K Monthly Events</li>
+                    <li>30-Day Intel Retention</li>
+                    <li>Basic Web Dashboard</li>
+                </ul>
+                <a href="login.html" class="btn btn-secondary w-full" style="text-align: center;">Initiate Recon</a>
+            </div>
+
+            <div class="pricing-card featured">
+                <div class="label mb-8" style="color: var(--honey);">Tactical Tier</div>
+                <div class="price" style="color: var(--honey); font-family: 'Manrope', sans-serif;">$99<span>/mo</span></div>
+                <ul>
+                    <li>20 Honeypot Clusters</li>
+                    <li>500K Monthly Events</li>
+                    <li>Full API Integration Access</li>
+                    <li>Secure Telegram Alerts</li>
+                    <li>Advanced ML Threat Engine</li>
+                </ul>
+                <a href="login.html" class="btn btn-primary w-full" style="text-align: center; box-shadow: var(--shadow-glow);">Deploy Tactical</a>
+            </div>
+
+            <div class="pricing-card">
+                <div class="label mb-8">Command Tier</div>
+                <div class="price" style="font-size: 1.8rem; font-family: 'Manrope', sans-serif;">Custom Pricing</div>
+                <ul>
+                    <li>Unlimited Honeypots</li>
+                    <li>Custom Retention Policies</li>
+                    <li>White-Label Deployment</li>
+                    <li>24/7 Priority SOC Support</li>
+                </ul>
+                <a href="mailto:support@honeycloud.com" class="btn btn-secondary w-full" style="text-align: center;">Request Command</a>
+            </div>
+        </div>
+    </section>
+
+    <!-- FAQ -->
+    <section id="faq" class="landing-section">
+        <div class="text-center mb-24">
+            <h2 class="mb-8" style="font-family: 'Manrope', sans-serif; font-size: 2rem;">Frequently Asked Questions</h2>
+            <p class="text-secondary">Common questions regarding the platform's security and sensors</p>
+        </div>
+
+        <div style="display: flex; flex-direction: column; gap: 16px; max-width: 800px; margin: 0 auto;">
+            <div class="faq-item">
+                <button class="faq-question">
+                    <span>Will honeypots increase the attack surface of my business?</span>
+                    <span class="faq-chevron">▼</span>
+                </button>
+                <div class="faq-answer">
+                    <p>No. HoneyCloud sensors are hosted completely isolated from your core database networks, providing no lateral movement routes for exploit actors.</p>
+                </div>
+            </div>
+            
+            <div class="faq-item">
+                <button class="faq-question">
+                    <span>How do the sensors authenticate with the SaaS backend?</span>
+                    <span class="faq-chevron">▼</span>
+                </button>
+                <div class="faq-answer">
+                    <p>Every sensor registers with a secure API key (<code>hc_...</code>). Telemetry is sent over HTTPS, avoiding plain login transmission.</p>
+                </div>
+            </div>
+            
+            <div class="faq-item">
+                <button class="faq-question">
+                    <span>Can HoneyCloud integrate with third-party tools (SIEM)?</span>
+                    <span class="faq-chevron">▼</span>
+                </button>
+                <div class="faq-answer">
+                    <p>Yes. You can fetch telemetry using standard REST APIs or export compiled report grids as CSV or Excel.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Contact Support -->
+    <section id="contact" class="landing-section" style="max-width: 600px; margin: 0 auto;">
+        <div class="text-center mb-24">
+            <h2 class="mb-8" style="font-family: 'Manrope', sans-serif; font-size: 2rem;">Contact SOC Support</h2>
+            <p class="text-secondary">Have custom requirements? Send our architects a message.</p>
+        </div>
+
+        <div class="card p-24" style="background: var(--bg-surface); border: 1px solid var(--border); border-radius: var(--radius-lg);">
+            <form onsubmit="event.preventDefault(); alert('Message dispatched successfully! Our security architects will respond shortly.'); this.reset();" style="display: flex; flex-direction: column; gap: 16px;">
+                <div class="form-group">
+                    <label class="form-label">Email Address</label>
+                    <input type="email" class="form-input" required placeholder="name@company.com">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Subject</label>
+                    <input type="text" class="form-input" required placeholder="How can we help?">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Message</label>
+                    <textarea class="form-textarea" rows="4" required placeholder="Explain your requirement..."></textarea>
+                </div>
+                <button type="submit" class="btn btn-primary w-full">Dispatch Message</button>
+            </form>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="landing-footer">
+        <p>&copy; 2026 HoneyCloud-X Security Ecosystem. Built for modern cloud operations. All rights reserved.</p>
+    </footer>
+
+    <script>
+        // Check if already logged in
+        if (app.isAuthenticated()) {
+            // Modify login buttons to go to dashboard
+            document.querySelectorAll('a[href="login.html"]').forEach(el => {
+                el.href = 'dashboard.html';
+                el.textContent = 'Go to Dashboard';
+            });
         }
 
-        async function relayToTelegram() {
-            try {
-                showNotification('Initiating Full Intelligence Relay...', 'info');
-                await generateReport('pdf', true);
-                setTimeout(async () => {
-                    await generateReport('xlsx', true);
-                    showNotification('All Intelligence Relayed to Telegram HQ', 'success');
-                }, 2000);
-            } catch (err) {
-                showNotification('Relay Error: ' + err.message, 'error');
-            }
-        }
+        // Toggle FAQ answers
+        document.querySelectorAll('.faq-question').forEach(button => {
+            button.addEventListener('click', () => {
+                const item = button.parentElement;
+                item.classList.toggle('open');
+            });
+        });
 
-        async function generateReport(format, sendTelegram) {
+        async function indexDemoLogin(e) {
+            e.preventDefault();
+            const btn = document.getElementById('heroDemoBtn');
+            const originalText = btn.textContent;
+            btn.textContent = 'Launching Demo...';
+            btn.disabled = true;
+            btn.style.pointerEvents = 'none';
+
             try {
-                if (!sendTelegram) showNotification(`Generating ${format.toUpperCase()} Report...`, 'info');
-                const token = localStorage.getItem('hc_token');
-                const response = await fetch(`${CONFIG.API_BASE}/api/reports/generate?format=${format}&send_telegram=${sendTelegram}`, {
+                const formData = new URLSearchParams();
+                formData.append('username', 'analyst');
+                formData.append('password', 'analyst123');
+
+                const apiBase = window.CONFIG?.API_BASE || '';
+                const response = await fetch(`${apiBase}/auth/login`, {
                     method: 'POST',
                     headers: {
-                        'Authorization': `Bearer ${token}`,
-                        'Content-Type': 'application/json'
-                    }
+                        'Content-Type': 'application/x-www-form-urlencoded'
+                    },
+                    body: formData
                 });
-                const data = await response.json();
-                if (response.ok) {
-                    if (sendTelegram) {
-                        showNotification(`${format.toUpperCase()} Relayed Successfully`, 'success');
-                    } else {
-                        showNotification(data.message, 'success');
-                        window.open(`${CONFIG.API_BASE}${data.download_url}&token=${token}`, '_blank');
-                    }
-                } else {
-                    showNotification(data.detail || 'Generation Failed', 'error');
-                }
-            } catch (err) {
-                console.error('Report error:', err);
-            }
-        }
 
-        function terminateSession() {
-            localStorage.clear();
-            window.location.href = 'login.html';
+                if (!response.ok) {
+                    const errText = await response.text();
+                    throw new Error(`Connection failed: ${errText || 'Make sure the backend server is running.'}`);
+                }
+
+                const data = await response.json();
+                app.setToken(data.access_token);
+                window.location.href = 'dashboard.html';
+            } catch (err) {
+                alert(err.message);
+                btn.textContent = originalText;
+                btn.disabled = false;
+                btn.style.pointerEvents = 'auto';
+            }
         }
     </script>
 </body>
+
 </html>

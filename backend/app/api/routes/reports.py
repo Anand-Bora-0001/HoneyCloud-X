@@ -20,7 +20,7 @@ router = APIRouter(prefix="/api/reports", tags=["Reports"])
 def generate_report(
     format: str = "csv",
     send_telegram: bool = False,
-    current_user: dict = Depends(get_admin_user),
+    current_user: dict = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
     """Generate attack report in CSV, PDF, or Excel format"""

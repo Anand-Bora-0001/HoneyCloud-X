@@ -179,6 +179,10 @@ class AttackEvent(Base):
     # Notification tracking
     notification_sent = Column(Boolean, default=False)
     
+    # Soft Deletes
+    is_deleted = Column(Boolean, default=False, index=True)
+    deleted_at = Column(DateTime(timezone=True), nullable=True)
+    
     def __repr__(self):
         return f"<AttackEvent {self.id} - {self.service_name} from {self.source_ip}>"
 
@@ -216,6 +220,17 @@ class NotificationConfig(Base):
     
     # Rate limiting
     max_alerts_per_hour = Column(Integer, default=10)
+    
+    # Report preferences
+    daily_summary_enabled = Column(Boolean, default=False)
+    weekly_report_enabled = Column(Boolean, default=False)
+    
+    # Notification stats
+    email_alerts_sent = Column(Integer, default=0)
+    telegram_alerts_sent = Column(Integer, default=0)
+    failed_deliveries = Column(Integer, default=0)
+    last_email_sent_at = Column(DateTime(timezone=True), nullable=True)
+    last_telegram_sent_at = Column(DateTime(timezone=True), nullable=True)
     
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
@@ -291,3 +306,223 @@ class BillingHistory(Base):
     
     def __repr__(self):
         return f"<BillingHistory {self.transaction_id} - {self.amount} {self.currency}>"
+
+
+# ========================
+# PHASE 1: DECEPTION ENGINE MODELS
+# ========================
+
+class AttackerProfile(Base):
+    __tablename__ = "attacker_profiles"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    source_ip = Column(String(45), unique=True, index=True, nullable=False)
+    
+    organization_id = Column(Integer, ForeignKey("organizations.id"), nullable=False)
+    
+    # Intelligence Stats
+    total_attacks = Column(Integer, default=0)
+    total_sessions = Column(Integer, default=0)
+    average_threat_score = Column(Float, default=0.0)
+    risk_category = Column(String(20), default="UNKNOWN")  # LOW, MEDIUM, HIGH, CRITICAL
+    
+    # Top targets/payloads (Stored as JSON for simplicity: e.g. {"/admin": 50, "/.env": 20})
+    most_targeted_endpoints = Column(JSON, default=dict)
+    most_common_payloads = Column(JSON, default=dict)
+    
+    # Phase 3: Advanced Intelligence
+    persona = Column(String(50), default="Scanner")
+    confidence_score = Column(Float, default=0.0)
+    behavior_summary = Column(Text, nullable=True)
+    
+    first_seen = Column(DateTime(timezone=True), server_default=func.now())
+    last_seen = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+
+    # Soft Deletes
+    is_deleted = Column(Boolean, default=False, index=True)
+    deleted_at = Column(DateTime(timezone=True), nullable=True)
+
+    def __repr__(self):
+        return f"<AttackerProfile {self.source_ip} - {self.risk_category}>"
+
+
+class DeceptionSession(Base):
+    __tablename__ = "deception_sessions"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    session_id = Column(String(255), unique=True, index=True, nullable=False)
+    source_ip = Column(String(45), index=True, nullable=False)
+    user_agent = Column(String(500), nullable=True)
+    
+    organization_id = Column(Integer, ForeignKey("organizations.id"), nullable=False)
+    service_id = Column(Integer, ForeignKey("services.id"), nullable=True)
+    
+    threat_score = Column(Float, default=0.0)
+    risk_level = Column(String(20), default="LOW")
+    status = Column(String(20), default="ACTIVE")  # ACTIVE, CLOSED, ESCALATED
+    recommended_route = Column(String(20), default="CONTINUE")  # CONTINUE, DECEPTION, BLOCK
+    
+    started_at = Column(DateTime(timezone=True), server_default=func.now())
+    last_seen = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+    
+    # Relationships
+    actions = relationship("DeceptionAction", back_populates="session", cascade="all, delete-orphan")
+
+    # Soft Deletes
+    is_deleted = Column(Boolean, default=False, index=True)
+    deleted_at = Column(DateTime(timezone=True), nullable=True)
+
+    def __repr__(self):
+        return f"<DeceptionSession {self.session_id}>"
+
+
+class DeceptionAction(Base):
+    __tablename__ = "deception_actions"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    session_id = Column(String(255), ForeignKey("deception_sessions.session_id"), index=True, nullable=False)
+    
+    action_type = Column(String(50), index=True, nullable=False)  # VISIT, SQLI_ATTEMPT, etc.
+    endpoint = Column(String(500), nullable=True)
+    method = Column(String(10), nullable=True)
+    payload = Column(Text, nullable=True)
+    
+    threat_score = Column(Float, default=0.0)
+    timestamp = Column(DateTime(timezone=True), server_default=func.now(), index=True)
+    
+    session = relationship("DeceptionSession", back_populates="actions")
+
+    def __repr__(self):
+        return f"<DeceptionAction {self.action_type} on {self.endpoint}>"
+
+
+# ========================
+# PHASE 3: ADAPTIVE DECEPTION MODELS
+# ========================
+
+class DeceptionScenario(Base):
+    __tablename__ = "deception_scenarios"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    scenario_id = Column(String(100), unique=True, index=True, nullable=False)
+    name = Column(String(255), nullable=False)
+    description = Column(Text, nullable=True)
+    
+    trigger_patterns = Column(JSON, default=list)  # e.g. ["wp-admin", "phpmyadmin"]
+    risk_level = Column(String(20), default="HIGH")
+    priority = Column(Integer, default=10)
+    enabled = Column(Boolean, default=True)
+    
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+
+    def __repr__(self):
+        return f"<DeceptionScenario {self.name}>"
+
+
+class FakeAsset(Base):
+    """Represents a fake file or honey token exposed in a scenario"""
+    __tablename__ = "fake_assets"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    scenario_id = Column(String(100), ForeignKey("deception_scenarios.scenario_id"))
+    
+    asset_type = Column(String(50))  # FILE, CREDENTIAL, URL
+    name = Column(String(255))
+    content = Column(Text, nullable=True)
+    is_honey_token = Column(Boolean, default=False)
+    
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+
+class FileUploadAttempt(Base):
+    """Metadata for files attackers attempt to upload to the trap"""
+    __tablename__ = "file_upload_attempts"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    session_id = Column(String(255), ForeignKey("deception_sessions.session_id"))
+    
+    filename = Column(String(500))
+    file_hash = Column(String(255))  # SHA-256
+    size = Column(Integer)
+    mime_type = Column(String(100))
+    attacker_ip = Column(String(45))
+    
+    timestamp = Column(DateTime(timezone=True), server_default=func.now())
+
+# ========================
+# PHASE 4: THREAT INTELLIGENCE & INVESTIGATION
+# ========================
+
+class ThreatCampaign(Base):
+    """Correlates multiple attacker profiles into a single organized campaign"""
+    __tablename__ = "threat_campaigns"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    organization_id = Column(Integer, ForeignKey("organizations.id"), nullable=False)
+    
+    name = Column(String(255), nullable=False)  # e.g., "Automated WordPress Scanner Group"
+    description = Column(Text, nullable=True)
+    confidence_score = Column(Float, default=0.0)
+    
+    # Common Indicators
+    common_personas = Column(JSON, default=list)
+    common_endpoints = Column(JSON, default=list)
+    common_payloads = Column(JSON, default=list)
+    
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+
+    # Soft Deletes
+    is_deleted = Column(Boolean, default=False, index=True)
+    deleted_at = Column(DateTime(timezone=True), nullable=True)
+
+
+class InvestigationReport(Base):
+    """Contains the generated Threat Narrative, MITRE mapping, and attack path analysis"""
+    __tablename__ = "investigation_reports"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    attacker_profile_id = Column(Integer, ForeignKey("attacker_profiles.id"), unique=True, nullable=False)
+    organization_id = Column(Integer, ForeignKey("organizations.id"), nullable=False)
+    
+    # Generated Narratives
+    summary_narrative = Column(Text, nullable=True)
+    executive_summary = Column(Text, nullable=True)
+    technical_summary = Column(Text, nullable=True)
+    
+    # Analysis Artifacts
+    mitre_mapping = Column(JSON, default=dict)  # {"T1110": "Brute Force", ...}
+    attack_paths = Column(JSON, default=list)   # [{"from": "/admin", "to": "/fake-admin", "time": ...}]
+    risk_evolution_trend = Column(JSON, default=dict) # {"trend": "Escalating", "sessions": [...]}
+    
+    # Aggregated Evidence
+    evidence_summary = Column(JSON, default=dict) # {"total_sessions": 14, "honey_tokens": 8}
+    
+    generated_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+
+    # Soft Deletes
+    is_deleted = Column(Boolean, default=False, index=True)
+    deleted_at = Column(DateTime(timezone=True), nullable=True)
+
+# ========================
+# AUDIT LOGGING
+# ========================
+
+class AuditLog(Base):
+    """Tracks cleanup, reset, and critical administrative actions"""
+    __tablename__ = "audit_logs"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    organization_id = Column(Integer, ForeignKey("organizations.id"), nullable=False)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=True)  # User who performed the action
+    
+    action = Column(String(255), nullable=False)  # e.g., "Clear Demo Data", "Empty Recycle Bin"
+    records_removed = Column(Integer, default=0)
+    details = Column(JSON, nullable=True)
+    
+    timestamp = Column(DateTime(timezone=True), server_default=func.now(), index=True)
+    
+    def __repr__(self):
+        return f"<AuditLog {self.action} at {self.timestamp}>"

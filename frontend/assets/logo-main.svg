@@ -1,0 +1,50 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" fill="none">
+  <defs>
+    <linearGradient id="honeyGrad" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#FFC14D"/>
+      <stop offset="50%" stop-color="#F6A623"/>
+      <stop offset="100%" stop-color="#E8912D"/>
+    </linearGradient>
+    <linearGradient id="shieldGrad" x1="0.5" y1="0" x2="0.5" y2="1">
+      <stop offset="0%" stop-color="#F6A623" stop-opacity="0.3"/>
+      <stop offset="100%" stop-color="#F6A623" stop-opacity="0.05"/>
+    </linearGradient>
+  </defs>
+  <!-- Outer honeycomb hexagon frame -->
+  <path d="M100 10 L177 47.5 L177 122.5 L100 160 L23 122.5 L23 47.5 Z" 
+        fill="url(#shieldGrad)" stroke="url(#honeyGrad)" stroke-width="2.5" stroke-linejoin="round"/>
+  <!-- Inner honeycomb cells (subtle) -->
+  <path d="M100 30 L140 52 L140 96 L100 118 L60 96 L60 52 Z" 
+        fill="none" stroke="#F6A623" stroke-width="1" opacity="0.15"/>
+  <!-- Bee body -->
+  <ellipse cx="100" cy="78" rx="22" ry="28" fill="url(#honeyGrad)"/>
+  <!-- Bee stripes -->
+  <rect x="78" y="70" width="44" height="5" rx="2.5" fill="#0B0F14" opacity="0.35"/>
+  <rect x="78" y="80" width="44" height="5" rx="2.5" fill="#0B0F14" opacity="0.35"/>
+  <rect x="78" y="90" width="44" height="4" rx="2" fill="#0B0F14" opacity="0.25"/>
+  <!-- Bee head -->
+  <circle cx="100" cy="50" r="14" fill="url(#honeyGrad)"/>
+  <!-- Bee eyes -->
+  <circle cx="94" cy="47" r="3" fill="#0B0F14"/>
+  <circle cx="106" cy="47" r="3" fill="#0B0F14"/>
+  <!-- Bee antennae -->
+  <path d="M94 38 Q88 22 78 18" stroke="#F6A623" stroke-width="2" fill="none" stroke-linecap="round"/>
+  <path d="M106 38 Q112 22 122 18" stroke="#F6A623" stroke-width="2" fill="none" stroke-linecap="round"/>
+  <circle cx="78" cy="18" r="3" fill="#FFC14D"/>
+  <circle cx="122" cy="18" r="3" fill="#FFC14D"/>
+  <!-- Bee wings -->
+  <ellipse cx="74" cy="65" rx="18" ry="12" fill="#F6A623" opacity="0.2" transform="rotate(-20, 74, 65)"/>
+  <ellipse cx="126" cy="65" rx="18" ry="12" fill="#F6A623" opacity="0.2" transform="rotate(20, 126, 65)"/>
+  <ellipse cx="74" cy="65" rx="16" ry="10" fill="none" stroke="#F6A623" stroke-width="0.8" opacity="0.4" transform="rotate(-20, 74, 65)"/>
+  <ellipse cx="126" cy="65" rx="16" ry="10" fill="none" stroke="#F6A623" stroke-width="0.8" opacity="0.4" transform="rotate(20, 126, 65)"/>
+  <!-- Stinger -->
+  <path d="M100 106 L100 115" stroke="url(#honeyGrad)" stroke-width="2.5" stroke-linecap="round"/>
+  <!-- Shield accent lines (threat radar) -->
+  <circle cx="100" cy="78" r="40" fill="none" stroke="#F6A623" stroke-width="0.5" opacity="0.1"/>
+  <circle cx="100" cy="78" r="55" fill="none" stroke="#F6A623" stroke-width="0.5" opacity="0.07"/>
+  <!-- Brand text -->
+  <text x="100" y="145" text-anchor="middle" font-family="Inter, sans-serif" font-weight="800" font-size="16" fill="#F1F5F9" letter-spacing="0.1em">HONEYCLOUD</text>
+  <text x="100" y="164" text-anchor="middle" font-family="Inter, sans-serif" font-weight="800" font-size="20" fill="#F6A623" letter-spacing="0.15em">—X—</text>
+  <!-- Tagline -->
+  <text x="100" y="185" text-anchor="middle" font-family="Inter, sans-serif" font-weight="500" font-size="8" fill="#64748B" letter-spacing="0.15em">THREAT INTELLIGENCE PLATFORM</text>
+</svg>

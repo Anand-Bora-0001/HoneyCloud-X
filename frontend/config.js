@@ -1,12 +1,11 @@
 /**
- * HoneyCloud Global Configuration
- * Simplified for maximum reliability
+ * HoneyCloud-X Configuration
+ * API Base URL. Leave empty to use relative paths if hosted together.
+ * If frontend is hosted separately from backend (e.g. localhost:5173 vs 8000), update this.
  */
 const CONFIG = {
-    // Empty string means "use the same server I am currently on"
     API_BASE: '', 
-    VERSION: '2.0.0',
-    DEBUG: true
+    VERSION: '3.0.0',
+    BRAND: 'HoneyCloud-X',
+    TAGLINE: 'Threat Intelligence Platform'
 };
-
-console.log('[HoneyCloud] Connection Mode: Relative (Stable)');

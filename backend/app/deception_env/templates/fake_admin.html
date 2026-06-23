@@ -1,0 +1,22 @@
+
+{% extends "base.html" %}
+{% block content %}
+<div class="metric-cards">
+    <div class="card">
+        <h4>Monthly Revenue</h4>
+        <h2>{{ stats.monthly_revenue }}</h2>
+    </div>
+    <div class="card">
+        <h4>Active Subs</h4>
+        <h2>{{ stats.active_subscriptions }}</h2>
+    </div>
+    <div class="card">
+        <h4>Churn</h4>
+        <h2>{{ stats.churn_rate }}</h2>
+    </div>
+</div>
+<div style="background: white; padding: 20px; box-shadow: 0 0 10px rgba(0,0,0,0.1);">
+    <h3>System Status</h3>
+    <p>All core systems operational. Database replication active.</p>
+</div>
+{% endblock %}

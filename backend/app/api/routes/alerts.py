@@ -84,33 +84,54 @@ async def test_email_alert(
 
         events_response = get_events(limit=20, current_user=current_user, db=db)
         stats_response = get_statistics(current_user, db)
-        pdf_path = generate_pdf_report(events_response, stats_response)
+        pdf_path = None
+        try:
+            pdf_path = generate_pdf_report(events_response, stats_response)
+        except Exception as e:
+            logger.warning(f"Test email PDF generation failed: {e}")
 
         try:
-            from ...email_service import email_service
-            if email_service.is_configured():
-                test_event = {
-                    'severity': 'HIGH', 'source_ip': '192.168.1.100',
-                    'service': 'TEST', 'endpoint': '/test-alert',
-                    'method': 'GET', 'timestamp': datetime.now().isoformat(),
-                    'location': {'country': 'Test Country', 'city': 'Test City', 'flag': '🧪', 'isp': 'Test ISP'}
-                }
-                email_sent = email_service.send_alert_email(
-                    to_emails=[email_address], alert_type="Test Security Alert",
-                    event_data=test_event, pdf_report_path=pdf_path
-                )
-                if email_sent:
-                    return {"status": "success", "message": f"Email alert sent to {email_address}!", "pdf_attached": True}
-                return {"status": "error", "message": "Failed to send email."}
-        except ImportError:
-            pass
+            from ...services.email_service import email_service
+            if not email_service.is_configured():
+                raise Exception("SMTP is not configured in .env. Please configure SMTP_SERVER, SMTP_PORT, SMTP_USERNAME, SMTP_PASSWORD.")
 
-        return {
-            "status": "success",
-            "message": f"Email alert simulated for {email_address}!",
-            "pdf_attached": True,
-            "note": "Configure SMTP in .env for real email sending"
-        }
+            test_event = {
+                'severity': 'HIGH', 'source_ip': '192.168.1.100',
+                'service': 'TEST-NODE', 'endpoint': '/test-alert',
+                'method': 'GET', 'timestamp': datetime.now().isoformat(),
+                'location': {'country': 'Test Country', 'city': 'Test City', 'flag': '🧪', 'isp': 'Test ISP'}
+            }
+            
+            # Send synchronously to catch exact exception for detailed error logs
+            success = email_service.send_email_sync(
+                to_emails=[email_address],
+                subject="🚨 HoneyCloud-X Test Threat Alert",
+                html_body=email_service._generate_alert_html("Test Security Alert", test_event),
+                text_body=email_service._generate_alert_text("Test Security Alert", test_event),
+                attachments=[pdf_path] if pdf_path else None
+            )
+            
+            if success:
+                if save_email and db:
+                    from ...models import User, NotificationConfig
+                    user = db.query(User).filter(User.username == current_user["username"]).first()
+                    if user:
+                        config = db.query(NotificationConfig).filter(
+                            NotificationConfig.organization_id == user.organization_id
+                        ).first()
+                        if config:
+                            current_emails = config.email_addresses or []
+                            if email_address not in current_emails:
+                                current_emails.append(email_address)
+                                config.email_addresses = current_emails
+                                db.commit()
+                return {"status": "success", "message": "Email Sent Successfully", "pdf_attached": bool(pdf_path)}
+            else:
+                return {"status": "error", "message": "Email Delivery Failed", "details": "SMTP login succeeded but send failed. Check server logs."}
+                
+        except Exception as smtp_err:
+            logger.error(f"SMTP error: {smtp_err}")
+            return {"status": "error", "message": "Email Delivery Failed", "details": str(smtp_err)}
 
     except HTTPException:
         raise
@@ -140,7 +161,9 @@ async def get_alert_config(
                         "alert_on_critical": config.alert_on_critical,
                         "alert_on_high": config.alert_on_high,
                         "alert_on_medium": config.alert_on_medium,
-                        "alert_on_low": config.alert_on_low
+                        "alert_on_low": config.alert_on_low,
+                        "daily_summary_enabled": config.daily_summary_enabled,
+                        "weekly_report_enabled": config.weekly_report_enabled
                     }
     except Exception as e:
         logger.warning(f"DB alert config failed: {e}")
@@ -152,5 +175,65 @@ async def get_alert_config(
         "alert_on_critical": True,
         "alert_on_high": True,
         "alert_on_medium": False,
-        "alert_on_low": False
+        "alert_on_low": False,
+        "daily_summary_enabled": False,
+        "weekly_report_enabled": False
     }
+
+
+@router.post("/config")
+async def save_alert_config(
+    request: dict,
+    current_user: dict = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Save alert configuration"""
+    try:
+        from ...models import User, NotificationConfig
+        user = db.query(User).filter(User.username == current_user["username"]).first()
+        if not user:
+            raise HTTPException(status_code=404, detail="User not found")
+            
+        config = db.query(NotificationConfig).filter(
+            NotificationConfig.organization_id == user.organization_id
+        ).first()
+        
+        if not config:
+            config = NotificationConfig(
+                organization_id=user.organization_id,
+                email_enabled=request.get("email_enabled", True),
+                email_addresses=request.get("saved_emails", []),
+                telegram_enabled=request.get("telegram_enabled", False),
+                alert_on_critical=request.get("alert_on_critical", True),
+                alert_on_high=request.get("alert_on_high", True),
+                alert_on_medium=request.get("alert_on_medium", False),
+                alert_on_low=request.get("alert_on_low", False),
+                daily_summary_enabled=request.get("daily_summary_enabled", False),
+                weekly_report_enabled=request.get("weekly_report_enabled", False)
+            )
+            db.add(config)
+        else:
+            if "email_enabled" in request:
+                config.email_enabled = request["email_enabled"]
+            if "saved_emails" in request:
+                config.email_addresses = request["saved_emails"]
+            if "telegram_enabled" in request:
+                config.telegram_enabled = request["telegram_enabled"]
+            if "alert_on_critical" in request:
+                config.alert_on_critical = request["alert_on_critical"]
+            if "alert_on_high" in request:
+                config.alert_on_high = request["alert_on_high"]
+            if "alert_on_medium" in request:
+                config.alert_on_medium = request["alert_on_medium"]
+            if "alert_on_low" in request:
+                config.alert_on_low = request["alert_on_low"]
+            if "daily_summary_enabled" in request:
+                config.daily_summary_enabled = request["daily_summary_enabled"]
+            if "weekly_report_enabled" in request:
+                config.weekly_report_enabled = request["weekly_report_enabled"]
+                
+        db.commit()
+        return {"status": "success", "message": "Notification preferences updated successfully!"}
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"Failed to save configuration: {str(e)}")

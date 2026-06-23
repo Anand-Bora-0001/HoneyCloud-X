@@ -1,0 +1,37 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: honeycloud-backend
+  namespace: honeycloud
+  labels:
+    app: honeycloud
+    component: backend
+spec:
+  type: ClusterIP
+  selector:
+    app: honeycloud
+    component: backend
+  ports:
+    - name: http
+      port: 8000
+      targetPort: 8000
+      protocol: TCP
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: honeycloud-redis
+  namespace: honeycloud
+  labels:
+    app: honeycloud
+    component: redis
+spec:
+  type: ClusterIP
+  selector:
+    app: honeycloud
+    component: redis
+  ports:
+    - name: redis
+      port: 6379
+      targetPort: 6379
+      protocol: TCP

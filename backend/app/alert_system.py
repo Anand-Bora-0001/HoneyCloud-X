@@ -9,12 +9,35 @@ from datetime import datetime
 from typing import Optional, List
 from sqlalchemy.orm import Session
 from .config import settings
-from .email_service import email_service
+from .services.email_service import email_service
 
 logger = logging.getLogger(__name__)
 
+def _update_notification_stats(db: Session, organization_id: int, channel: str, success: bool):
+    if not db or not organization_id:
+        return
+    try:
+        from .models import NotificationConfig
+        config = db.query(NotificationConfig).filter(
+            NotificationConfig.organization_id == organization_id
+        ).first()
+        if config:
+            if success:
+                if channel == "telegram":
+                    config.telegram_alerts_sent += 1
+                    config.last_telegram_sent_at = datetime.now()
+                elif channel == "email":
+                    config.email_alerts_sent += 1
+                    config.last_email_sent_at = datetime.now()
+            else:
+                config.failed_deliveries += 1
+            db.commit()
+    except Exception as e:
+        logger.warning(f"Failed to update notification stats in DB: {e}")
+
 def send_telegram_alert(message: str, db: Session = None, organization_id: int = None) -> bool:
     """Send alert message to Telegram using organization's configuration"""
+    success = False
     try:
         # Try to get configuration from database first
         if db and organization_id:
@@ -36,38 +59,42 @@ def send_telegram_alert(message: str, db: Session = None, organization_id: int =
                 
                 if response.ok:
                     logger.info("✅ Telegram alert sent successfully (database config)")
-                    return True
+                    success = True
                 else:
                     logger.error(f"❌ Telegram alert failed: {response.status_code} - {response.text}")
-                    return False
     except Exception as e:
         logger.warning(f"Database Telegram config failed: {e}")
     
-    # Fallback to global settings
-    if not settings.is_telegram_configured:
-        logger.warning("Telegram not configured - skipping alert")
-        return False
-    
-    try:
-        url = f"https://api.telegram.org/bot{settings.telegram_bot_token}/sendMessage"
-        payload = {
-            'chat_id': settings.telegram_chat_id,
-            'text': message,
-            'parse_mode': 'HTML'
-        }
-        
-        response = requests.post(url, json=payload, timeout=10)
-        
-        if response.ok:
-            logger.info("✅ Telegram alert sent successfully (global config)")
-            return True
-        else:
-            logger.error(f"❌ Telegram alert failed: {response.status_code} - {response.text}")
+    if not success:
+        # Fallback to global settings
+        if not settings.is_telegram_configured:
+            logger.warning("Telegram not configured - skipping alert")
+            if db and organization_id:
+                _update_notification_stats(db, organization_id, "telegram", False)
             return False
+        
+        try:
+            url = f"https://api.telegram.org/bot{settings.telegram_bot_token}/sendMessage"
+            payload = {
+                'chat_id': settings.telegram_chat_id,
+                'text': message,
+                'parse_mode': 'HTML'
+            }
             
-    except Exception as e:
-        logger.error(f"❌ Telegram alert error: {e}")
-        return False
+            response = requests.post(url, json=payload, timeout=10)
+            
+            if response.ok:
+                logger.info("✅ Telegram alert sent successfully (global config)")
+                success = True
+            else:
+                logger.error(f"❌ Telegram alert failed: {response.status_code} - {response.text}")
+                
+        except Exception as e:
+            logger.error(f"❌ Telegram alert error: {e}")
+            
+    if db and organization_id:
+        _update_notification_stats(db, organization_id, "telegram", success)
+    return success
 
 def send_telegram_document(file_path: str, caption: str = "", db: Session = None, organization_id: int = None) -> bool:
     """Send document to Telegram using organization's configuration"""
@@ -141,22 +168,17 @@ def send_email_alert(
     to_emails: List[str],
     alert_type: str,
     event_data: dict,
-    pdf_report_path: Optional[str] = None
+    pdf_report_path: Optional[str] = None,
+    db: Session = None,
+    organization_id: int = None
 ) -> bool:
     """
     Send professional email alert with PDF report
-    
-    Args:
-        to_emails: List of recipient email addresses
-        alert_type: Type of alert (e.g., "Critical Security Alert")
-        event_data: Attack event data
-        pdf_report_path: Path to PDF report to attach
-        
-    Returns:
-        bool: True if sent successfully
     """
     if not email_service.is_configured():
         logger.warning("Email service not configured - skipping alert")
+        if db and organization_id:
+            _update_notification_stats(db, organization_id, "email", False)
         return False
     
     try:
@@ -172,91 +194,113 @@ def send_email_alert(
         else:
             logger.error("❌ Failed to send email alert")
         
+        if db and organization_id:
+            _update_notification_stats(db, organization_id, "email", success)
         return success
         
     except Exception as e:
         logger.error(f"❌ Email alert error: {e}")
+        if db and organization_id:
+            _update_notification_stats(db, organization_id, "email", False)
         return False
 
 def handle_attack_event(event: dict, db: Session = None) -> None:
     """
     Handle incoming attack event and trigger appropriate alerts
-    
-    Args:
-        event: Attack event data dictionary
-        db: Database session for getting organization config
     """
     try:
         severity = event.get('severity', 'UNKNOWN')
         source_ip = event.get('source_ip', 'Unknown')
         service = event.get('service', 'Unknown')
-        
-        logger.info(f"🚨 Processing {severity} alert from {source_ip} on {service}")
-        
-        # Only alert on MEDIUM, HIGH and CRITICAL events
-        if severity not in ['MEDIUM', 'HIGH', 'CRITICAL']:
-            logger.debug(f"Skipping alert for {severity} event")
-            return
-        
-        # Generate alert message for Telegram
-        alert_message = generate_alert_message(event)
-        
-        # Check for async vs sync execution
-        from .worker import CELERY_AVAILABLE
-        from .tasks.alert_tasks import send_telegram_alert_async, send_email_alert_async
-
-        # Send Telegram alert
         organization_id = event.get('organization_id')
-        if CELERY_AVAILABLE:
-            send_telegram_alert_async.delay(alert_message, organization_id=organization_id)
-            telegram_sent = True # Assumed queued
-        else:
-            telegram_sent = send_telegram_alert(
-                alert_message,
-                db=db,
-                organization_id=organization_id
-            )
         
-        # Generate PDF report for email attachment (sync for now as it's needed for email task)
-        pdf_path = None
-        try:
-            from .report_generator import generate_pdf_report
-            recent_events = [event]
-            stats = {'total_events': 1, 'events_by_severity': {severity: 1}}
-            pdf_path = generate_pdf_report(recent_events, stats)
-        except Exception as e:
-            logger.error(f"Failed to generate PDF report: {e}")
+        logger.info(f"🚨 Processing {severity} alert from {source_ip} on {service} (Org: {organization_id})")
         
-        # Send email alerts (if configured)
-        if email_service.is_configured():
-            # Try to get recipients from DB
-            recipients = []
-            if db and organization_id:
+        # Load default settings
+        email_enabled = settings.email_enabled
+        telegram_enabled = settings.is_telegram_configured
+        
+        alert_on_critical = True
+        alert_on_high = True
+        alert_on_medium = False
+        alert_on_low = False
+        
+        recipients = [settings.alert_email_to] if settings.alert_email_to else []
+        
+        if db and organization_id:
+            try:
                 from .models import NotificationConfig
                 config = db.query(NotificationConfig).filter(
-                    NotificationConfig.organization_id == organization_id,
-                    NotificationConfig.email_enabled == True
+                    NotificationConfig.organization_id == organization_id
                 ).first()
-                if config and config.email_addresses:
-                    recipients = config.email_addresses
+                if config:
+                    telegram_enabled = config.telegram_enabled
+                    email_enabled = config.email_enabled
+                    recipients = config.email_addresses or []
+                    alert_on_critical = config.alert_on_critical
+                    alert_on_high = config.alert_on_high
+                    alert_on_medium = config.alert_on_medium
+                    alert_on_low = config.alert_on_low
+            except Exception as e:
+                logger.warning(f"Failed to fetch NotificationConfig from DB: {e}")
 
-            if recipients:
-                if CELERY_AVAILABLE:
-                    send_email_alert_async.delay(
-                        to_emails=recipients,
-                        alert_type=f"Critical Security Alert from {source_ip}",
-                        event_data=event,
-                        pdf_path=pdf_path
-                    )
-                else:
-                    send_email_alert(
-                        to_emails=recipients,
-                        alert_type=f"Critical Security Alert from {source_ip}",
-                        event_data=event,
-                        pdf_report_path=pdf_path
-                    )
+        # Check severity threshold filters
+        severity_match = False
+        if severity == 'CRITICAL' and alert_on_critical:
+            severity_match = True
+        elif severity == 'HIGH' and alert_on_high:
+            severity_match = True
+        elif severity == 'MEDIUM' and alert_on_medium:
+            severity_match = True
+        elif severity == 'LOW' and alert_on_low:
+            severity_match = True
+            
+        if not severity_match:
+            logger.info(f"Skipping alert: severity {severity} does not match configured thresholds")
+            return
+            
+        # Parallel Routing Rules:
+        # Telegram: Only on CRITICAL severity
+        send_tg = telegram_enabled and (severity == 'CRITICAL')
+        
+        # Email: On CRITICAL and HIGH severity
+        send_mail = email_enabled and (severity in ['CRITICAL', 'HIGH'])
+        
+        # Async vs Sync Celery handling
+        from .worker import CELERY_AVAILABLE
+        from .tasks.alert_tasks import send_telegram_alert_async, send_email_alert_async
+        
+        if send_tg:
+            alert_message = generate_alert_message(event)
+            if CELERY_AVAILABLE:
+                send_telegram_alert_async.delay(alert_message, organization_id=organization_id)
             else:
-                logger.info("Email service configured but no recipients specified for automatic alerts")
+                send_telegram_alert(alert_message, db=db, organization_id=organization_id)
+                
+        if send_mail and recipients:
+            pdf_path = None
+            try:
+                from .report_generator import generate_pdf_report
+                pdf_path = generate_pdf_report([event], {'total_events': 1, 'events_by_severity': {severity: 1}})
+            except Exception as e:
+                logger.error(f"Failed to generate PDF report: {e}")
+                
+            if CELERY_AVAILABLE:
+                send_email_alert_async.delay(
+                    to_emails=recipients,
+                    alert_type=f"{severity} Incident Report",
+                    event_data=event,
+                    pdf_path=pdf_path
+                )
+            else:
+                send_email_alert(
+                    to_emails=recipients,
+                    alert_type=f"{severity} Incident Report",
+                    event_data=event,
+                    pdf_report_path=pdf_path,
+                    db=db,
+                    organization_id=organization_id
+                )
         
         logger.info(f"✅ Alert processing delegated (Async: {CELERY_AVAILABLE})")
         

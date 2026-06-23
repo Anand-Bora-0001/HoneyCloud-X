@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Threat Intelligence | HoneyCloud-X</title>
+    <meta name="description" content="Detailed threat intelligence record and attacker profile analysis.">
+    <link rel="icon" type="image/svg+xml" href="assets/favicon.svg" />
+    <link rel="stylesheet" href="css/design-system.css?v=3.0.0">
+    <script src="config.js?v=3.0.0"></script>
+    <script src="js/app.js?v=3.0.0"></script>
+</head>
+<body class="app-layout">
+    <a href="#main-content" class="skip-to-content">Skip to main content</a>
+
+    <!-- Sidebar -->
+    <aside id="sidebar" class="sidebar" role="navigation" aria-label="Main navigation"></aside>
+
+    <!-- Main Content -->
+    <main class="main-content" id="main-content">
+        <!-- Topbar -->
+        <header class="topbar"></header>
+
+        <div class="page-content" id="detailsContainer">
+            <div class="flex items-center justify-center" style="min-height:50vh;">
+                <div class="empty-state">
+                    <div class="empty-state-icon">
+                        <span class="animate-spin" style="display:inline-block;width:24px;height:24px;border:3px solid var(--border);border-top-color:var(--honey);border-radius:50%;"></span>
+                    </div>
+                    <p class="text-muted">Loading threat intelligence record...</p>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script src="js/attack-details.js?v=3.0.0"></script>
+</body>
+</html>

@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 36 36" fill="none">
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#FFC14D"/>
+      <stop offset="100%" stop-color="#E8912D"/>
+    </linearGradient>
+  </defs>
+  <!-- Hexagon frame -->
+  <path d="M18 2 L32 10 L32 26 L18 34 L4 26 L4 10 Z" fill="none" stroke="url(#g)" stroke-width="1.5" stroke-linejoin="round" opacity="0.6"/>
+  <!-- Bee body -->
+  <ellipse cx="18" cy="17" rx="6" ry="8" fill="url(#g)"/>
+  <!-- Stripes -->
+  <rect x="12" y="15" width="12" height="2" rx="1" fill="#0B0F14" opacity="0.3"/>
+  <rect x="12" y="19" width="12" height="2" rx="1" fill="#0B0F14" opacity="0.3"/>
+  <!-- Head -->
+  <circle cx="18" cy="9.5" r="4" fill="url(#g)"/>
+  <!-- Eyes -->
+  <circle cx="16.5" cy="9" r="1" fill="#0B0F14"/>
+  <circle cx="19.5" cy="9" r="1" fill="#0B0F14"/>
+  <!-- Wings -->
+  <ellipse cx="12" cy="13" rx="4.5" ry="3" fill="#F6A623" opacity="0.2" transform="rotate(-15,12,13)"/>
+  <ellipse cx="24" cy="13" rx="4.5" ry="3" fill="#F6A623" opacity="0.2" transform="rotate(15,24,13)"/>
+  <!-- Antennae -->
+  <path d="M16 6 Q14 2 11 1.5" stroke="#F6A623" stroke-width="1" fill="none" stroke-linecap="round"/>
+  <path d="M20 6 Q22 2 25 1.5" stroke="#F6A623" stroke-width="1" fill="none" stroke-linecap="round"/>
+  <circle cx="11" cy="1.5" r="1.2" fill="#FFC14D"/>
+  <circle cx="25" cy="1.5" r="1.2" fill="#FFC14D"/>
+</svg>

@@ -1,0 +1,1 @@
+from .investigation_service import InvestigationService

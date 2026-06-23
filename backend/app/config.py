@@ -36,6 +36,7 @@ class Settings(BaseSettings):
     telegram_chat_id: Optional[str] = None
     
     # Email/SMTP
+    email_enabled: bool = False
     smtp_server: Optional[str] = None
     smtp_port: int = 587
     smtp_username: Optional[str] = None
@@ -43,6 +44,8 @@ class Settings(BaseSettings):
     smtp_from_email: str = "alerts@honeycloud.com"
     smtp_from_name: str = "HoneyCloud Security"
     smtp_use_tls: bool = True
+    alert_email_to: Optional[str] = None
+    alert_email_from: Optional[str] = None
     
     # Rate Limiting
     rate_limit_per_minute: int = 100
@@ -74,6 +77,47 @@ class Settings(BaseSettings):
             raise ValueError('JWT secret key must be at least 32 characters long')
         return v
     
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        import json
+        
+        # Parse SMTP_CONFIG if present in environment
+        smtp_config_str = os.environ.get("SMTP_CONFIG")
+        if smtp_config_str:
+            try:
+                smtp_config = json.loads(smtp_config_str)
+                if isinstance(smtp_config, dict):
+                    if "smtp_server" in smtp_config:
+                        self.smtp_server = smtp_config["smtp_server"]
+                    if "smtp_port" in smtp_config:
+                        self.smtp_port = int(smtp_config["smtp_port"])
+                    if "smtp_username" in smtp_config:
+                        self.smtp_username = smtp_config["smtp_username"]
+                    if "smtp_password" in smtp_config:
+                        self.smtp_password = smtp_config["smtp_password"]
+                    if "smtp_from_email" in smtp_config:
+                        self.smtp_from_email = smtp_config["smtp_from_email"]
+                    if "smtp_from_name" in smtp_config:
+                        self.smtp_from_name = smtp_config["smtp_from_name"]
+                    if "smtp_use_tls" in smtp_config:
+                        val = smtp_config["smtp_use_tls"]
+                        self.smtp_use_tls = val if isinstance(val, bool) else str(val).lower() in ("true", "1", "yes")
+            except Exception as e:
+                logging.getLogger("HoneyCloud").warning(f"Failed to parse SMTP_CONFIG JSON: {e}")
+
+        # Parse TELEGRAM_CONFIG if present in environment
+        telegram_config_str = os.environ.get("TELEGRAM_CONFIG")
+        if telegram_config_str:
+            try:
+                telegram_config = json.loads(telegram_config_str)
+                if isinstance(telegram_config, dict):
+                    if "telegram_bot_token" in telegram_config:
+                        self.telegram_bot_token = telegram_config["telegram_bot_token"]
+                    if "telegram_chat_id" in telegram_config:
+                        self.telegram_chat_id = telegram_config["telegram_chat_id"]
+            except Exception as e:
+                logging.getLogger("HoneyCloud").warning(f"Failed to parse TELEGRAM_CONFIG JSON: {e}")
+
     @property
     def is_telegram_configured(self) -> bool:
         """Check if Telegram is properly configured"""
@@ -82,7 +126,7 @@ class Settings(BaseSettings):
     @property
     def is_email_configured(self) -> bool:
         """Check if email is properly configured"""
-        return bool(self.smtp_server and self.smtp_username and self.smtp_password)
+        return bool(self.email_enabled and self.smtp_server and self.smtp_username and self.smtp_password)
     
     def setup_directories(self):
         """Create necessary directories"""

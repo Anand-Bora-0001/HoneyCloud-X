@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Adversary Investigations | HoneyCloud-X</title>
+    <meta name="description" content="Detailed adversary investigation reports and behavior intelligence.">
+    <link rel="icon" type="image/svg+xml" href="assets/favicon.svg" />
+    <link rel="stylesheet" href="css/design-system.css?v=3.0.0">
+    
+    <script src="config.js?v=3.0.0"></script>
+    <script src="js/app.js?v=3.0.0"></script>
+</head>
+<body class="app-layout">
+    <a href="#main-content" class="skip-to-content">Skip to main content</a>
+
+    <!-- Sidebar -->
+    <aside id="sidebar" class="sidebar" role="navigation" aria-label="Main navigation"></aside>
+
+    <!-- Main Content -->
+    <main class="main-content" id="main-content">
+        <!-- Topbar -->
+        <header class="topbar"></header>
+
+        <!-- Page Content -->
+        <div class="page-content">
+            <div class="flex justify-between items-center mb-24">
+                <div>
+                    <h2 style="font-family: 'Manrope', sans-serif;">Adversary Investigations</h2>
+                    <p class="text-sm text-secondary">AI-generated threat reconstruction profiles and payload forensics</p>
+                </div>
+            </div>
+
+            <!-- Empty State -->
+            <div id="emptyState" class="hidden" style="display:none; justify-content:center; align-items:center; min-height:40vh;">
+                <div class="empty-state">
+                    <div class="empty-state-icon">🕵️‍♂️</div>
+                    <h3>No Investigations Yet</h3>
+                    <p>When attacks occur, machine learning generates deep reconstructive reports here.</p>
+                </div>
+            </div>
+
+            <!-- Investigations List & Details -->
+            <div id="investigationsContainer" class="flex-col gap-16">
+                <!-- Skeletons will load here -->
+            </div>
+        </div>
+    </main>
+
+    <script src="js/investigations.js?v=3.0.0"></script>
+</body>
+</html>

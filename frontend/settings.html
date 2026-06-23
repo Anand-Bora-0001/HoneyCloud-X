@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Settings | HoneyCloud-X</title>
+    <link rel="icon" type="image/png" href="assets/logo.png" />
+    <link rel="stylesheet" href="css/design-system.css?v=3.0.0">
+    
+    <script src="config.js?v=3.0.0"></script>
+    <script src="js/app.js?v=3.0.0"></script>
+</head>
+<body class="app-layout">
+
+    <!-- Sidebar -->
+    <aside id="sidebar" class="sidebar" role="navigation" aria-label="Main navigation"></aside>
+
+    <!-- Main Content -->
+    <main class="main-content" id="main-content">
+        <!-- Topbar -->
+        <header class="topbar"></header>
+
+        <!-- Page Content -->
+        <div class="page-content">
+            
+            <div class="tabs mb-24">
+                <button class="tab active" onclick="settings.switchTab('notifications', this)">Notifications & Alerts</button>
+                <button class="tab" onclick="settings.switchTab('sensors', this)">API Keys & Decoy Sensors</button>
+                <button class="tab" onclick="settings.switchTab('profile', this)">Operator Profile</button>
+                <button class="tab" onclick="settings.switchTab('theme', this)">Theme Settings</button>
+            </div>
+
+            <!-- Notifications Tab -->
+            <div id="tab-notifications" class="tab-content active max-w-4xl">
+                
+                <div class="card mb-24 border-info shadow-lg">
+                    <div class="card-header bg-info/5">
+                        <div class="flex items-center gap-8">
+                            <span class="text-xl">📱</span>
+                            <h3 class="card-header-title text-info">Secure Telegram Relay</h3>
+                        </div>
+                        <div id="tgStatusBadge" class="badge badge-low hidden">Configured</div>
+                    </div>
+                    <div class="card-body">
+                        <p class="text-sm text-secondary mb-16">Configure instantaneous threat alerts to your SOC Telegram channel.</p>
+                        
+                        <form id="tgForm" class="flex-col gap-16">
+                            <div class="grid grid-2" style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                                <div class="form-group">
+                                    <label class="form-label">Bot API Token</label>
+                                    <input type="text" id="tgToken" class="form-input font-mono" placeholder="123456789:ABCdefGHIjklMNOpqrsTUVwxyz">
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">Target Chat ID</label>
+                                    <input type="text" id="tgChat" class="form-input font-mono" placeholder="-1001234567890">
+                                </div>
+                            </div>
+                            
+                            <div class="flex items-center gap-12 mt-8" style="display: flex; gap: 12px; align-items: center; margin-top: 16px;">
+                                <button type="button" class="btn btn-secondary" onclick="settings.validateTelegram()">Verify Credentials</button>
+                                <button type="submit" id="tgSaveBtn" class="btn btn-primary" disabled>Commit Configuration</button>
+                                <button type="button" class="btn btn-info ml-auto" onclick="settings.testTelegram()" style="margin-left: auto;">Test Ping</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- Notification Preference Settings -->
+                <div class="card mb-24">
+                    <div class="card-header">
+                        <div class="flex items-center gap-8">
+                            <span class="text-xl">⚙️</span>
+                            <h3 class="card-header-title">Alert & Report Configuration</h3>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <form id="preferencesForm" onsubmit="event.preventDefault(); settings.savePreferences();" class="flex-col gap-16" style="display: flex; flex-direction: column; gap: 16px;">
+                            <p class="text-sm text-secondary">Tune alert routing thresholds, email summaries, and active dispatch channels.</p>
+                            
+                            <div class="grid grid-2" style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                                <div class="flex-col gap-12" style="display: flex; flex-direction: column; gap: 12px;">
+                                    <h4 class="text-sm font-bold text-primary" style="margin: 0;">Channels</h4>
+                                    <div class="form-checkbox-row" style="display: flex; align-items: center; gap: 8px;">
+                                        <input type="checkbox" id="prefTelegramEnabled">
+                                        <label for="prefTelegramEnabled" class="text-sm">Enable Telegram Alerts</label>
+                                    </div>
+                                    <div class="form-checkbox-row" style="display: flex; align-items: center; gap: 8px;">
+                                        <input type="checkbox" id="prefEmailEnabled">
+                                        <label for="prefEmailEnabled" class="text-sm">Enable Email Alerts</label>
+                                    </div>
+                                </div>
+                                <div class="flex-col gap-12" style="display: flex; flex-direction: column; gap: 12px;">
+                                    <h4 class="text-sm font-bold text-primary" style="margin: 0;">Alert Severity Filters</h4>
+                                    <div class="form-checkbox-row" style="display: flex; align-items: center; gap: 8px;">
+                                        <input type="checkbox" id="prefCriticalOnly" onchange="settings.toggleSeverityFilters('critical')">
+                                        <label for="prefCriticalOnly" class="text-sm">Critical Alerts Only</label>
+                                    </div>
+                                    <div class="form-checkbox-row" style="display: flex; align-items: center; gap: 8px;">
+                                        <input type="checkbox" id="prefHighCritical" onchange="settings.toggleSeverityFilters('high')">
+                                        <label for="prefHighCritical" class="text-sm">High + Critical Alerts</label>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <hr style="border-color: rgba(255, 255, 255, 0.05); margin: 8px 0;">
+                            
+                            <div class="flex-col gap-12" style="display: flex; flex-direction: column; gap: 12px;">
+                                <h4 class="text-sm font-bold text-primary" style="margin: 0;">Scheduled Reporting</h4>
+                                <div class="form-checkbox-row" style="display: flex; align-items: center; gap: 8px;">
+                                    <input type="checkbox" id="prefDailySummary">
+                                    <label for="prefDailySummary" class="text-sm">Daily Summary Email</label>
+                                </div>
+                                <div class="form-checkbox-row" style="display: flex; align-items: center; gap: 8px;">
+                                    <input type="checkbox" id="prefWeeklyReport">
+                                    <label for="prefWeeklyReport" class="text-sm">Weekly Security Report</label>
+                                </div>
+                            </div>
+                            
+                            <div style="display: flex; margin-top: 8px;">
+                                <button type="submit" class="btn btn-primary">Save Preferences</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- Test Email Utility Card -->
+                <div class="card mb-24">
+                    <div class="card-header">
+                        <div class="flex items-center gap-8">
+                            <span class="text-xl">✉️</span>
+                            <h3 class="card-header-title">Email Dispatch & Diagnostics</h3>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <p class="text-sm text-secondary mb-16">Dispatch a diagnostic alert to verify your Gmail SMTP pipeline configuration.</p>
+                        
+                        <div class="flex items-end gap-12 max-w-lg" style="display: flex; gap: 12px; align-items: flex-end;">
+                            <div class="form-group flex-1" style="flex: 1;">
+                                <label class="form-label">Destination Email Address</label>
+                                <input type="email" id="testEmail" class="form-input" placeholder="anandbora241@gmail.com">
+                            </div>
+                            <button type="button" class="btn btn-secondary" onclick="settings.testEmail()">Send Test Email</button>
+                        </div>
+                        
+                        <!-- Log Output Panel for diagnostics -->
+                        <div id="smtpLogPanel" class="mt-16 p-12 bg-black/40 rounded border border-white/5 font-mono text-xs text-danger" style="white-space: pre-wrap; display: none;">
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- API Keys & Decoy Sensors Tab -->
+            <div id="tab-sensors" class="tab-content">
+                <div class="card mb-24">
+                    <div class="card-header">
+                        <h3 class="card-header-title">Decoy Sensors & API Integrations</h3>
+                        <button class="btn btn-primary btn-sm" onclick="settings.openSensorModal(true)">Register Decoy Sensor</button>
+                    </div>
+                    <div class="card-body-flush">
+                        <div class="table-wrapper">
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>Sensor Name</th>
+                                        <th>Sensor Type</th>
+                                        <th>API Credentials Key</th>
+                                        <th>Date Created</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="sensorsListBody">
+                                    <tr>
+                                        <td colspan="5" class="text-center p-24 text-muted" style="text-align: center; padding: 24px;">Loading active decoy sensors...</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Profile Tab -->
+            <div id="tab-profile" class="tab-content max-w-4xl">
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-header-title">Identity</h3>
+                    </div>
+                    <div class="card-body">
+                        <div class="grid grid-2 gap-24" style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px;">
+                            <div class="form-group">
+                                <label class="form-label">Operator Handle</label>
+                                <input type="text" id="profileUser" class="form-input" disabled value="Loading...">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Email Address</label>
+                                <input type="email" id="profileEmail" class="form-input" disabled value="Loading...">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Operator Role</label>
+                                <input type="text" id="profileRole" class="form-input font-mono text-accent" disabled value="ADMINISTRATOR">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Theme Settings Tab -->
+            <div id="tab-theme" class="tab-content max-w-4xl">
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-header-title">Interface Theme & Customization</h3>
+                    </div>
+                    <div class="card-body flex-col gap-20" style="display: flex; flex-direction: column; gap: 20px;">
+                        <p class="text-sm text-secondary">Tune the console visual styles. Settings are local to this operator session.</p>
+                        
+                        <div class="form-group">
+                            <label class="form-label">Console Sub-Theme</label>
+                            <select id="themeSelect" class="form-select" onchange="settings.changeSubTheme(this.value)">
+                                <option value="default">Honey Gold Default</option>
+                                <option value="midnight-amber">Midnight Amber</option>
+                                <option value="obsidian">Obsidian Black</option>
+                            </select>
+                        </div>
+
+                        <div class="form-checkbox-row">
+                            <input type="checkbox" id="toggleGrid" onchange="settings.toggleSimpleGrid(this.checked)">
+                            <label for="toggleGrid">Render dynamic background grid pattern</label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <!-- Register Decoy Sensor Modal -->
+    <div id="sensorModal" class="modal-overlay" role="dialog" aria-labelledby="sensor-title" aria-modal="true">
+        <div class="modal" style="max-width: 500px;">
+            <div class="modal-header">
+                <h3 id="sensor-title">Register Decoy Sensor</h3>
+                <button class="modal-close" onclick="settings.openSensorModal(false)" aria-label="Close dialog">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="sensorForm" onsubmit="event.preventDefault(); settings.createSensor();" style="display: flex; flex-direction: column; gap: 16px;">
+                    <div class="form-group">
+                        <label class="form-label">Sensor Name</label>
+                        <input type="text" id="sensorName" class="form-input" required placeholder="ssh-sensor-edge-01">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Sensor Type / Decoy Mode</label>
+                        <select id="sensorType" class="form-select">
+                            <option value="SSH">SSH honeypot decoy</option>
+                            <option value="HTTP">HTTP/Web honeypot decoy</option>
+                            <option value="FTP">FTP honeypot decoy</option>
+                            <option value="Telnet">Telnet honeypot decoy</option>
+                            <option value="E-Commerce">E-Commerce Web honeypot decoy</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Sensor Description</label>
+                        <input type="text" id="sensorDesc" class="form-input" placeholder="Edge decoy node deployed on AWS Dublin VPC.">
+                    </div>
+                    <div style="display: flex; justify-content: flex-end; gap: 12px; margin-top: 12px;">
+                        <button type="button" class="btn btn-secondary" onclick="settings.openSensorModal(false)">Cancel</button>
+                        <button type="submit" class="btn btn-primary">Deploy Sensor</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/settings.js?v=3.0.0"></script>
+</body>
+</html>

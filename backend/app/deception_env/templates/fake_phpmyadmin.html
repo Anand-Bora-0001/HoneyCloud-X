@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <title>phpMyAdmin</title>
+    <style>
+        body { font-family: sans-serif; background: #f2f2f2; margin: 0; padding: 0; }
+        .login { max-width: 400px; margin: 100px auto; background: #fff; padding: 20px; border: 1px solid #ccc; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
+        h1 { font-size: 1.2em; border-bottom: 1px solid #eee; padding-bottom: 10px; text-align: center; color: #333; }
+        .fieldset { margin: 15px 0; }
+        label { display: inline-block; width: 100px; font-size: 0.9em; }
+        input[type="text"], input[type="password"] { width: 250px; padding: 5px; border: 1px solid #aaa; }
+        .buttons { text-align: right; }
+        input[type="submit"] { background: #e0e0e0; border: 1px solid #ccc; padding: 5px 15px; cursor: pointer; }
+        .error { color: red; text-align: center; font-size: 0.9em; margin-bottom: 10px; }
+    </style>
+</head>
+<body>
+    <div class="login">
+        <h1>Welcome to phpMyAdmin</h1>
+        {% if error %}
+        <div class="error">{{ error }}</div>
+        {% endif %}
+        <form method="post" action="/deception/phpmyadmin">
+            <div class="fieldset">
+                <label for="input_username">Username:</label>
+                <input type="text" name="pma_username" id="input_username" value="" />
+            </div>
+            <div class="fieldset">
+                <label for="input_password">Password:</label>
+                <input type="password" name="pma_password" id="input_password" value="" />
+            </div>
+            <div class="buttons">
+                <input type="submit" value="Go" id="input_go" />
+            </div>
+        </form>
+    </div>
+</body>
+</html>
