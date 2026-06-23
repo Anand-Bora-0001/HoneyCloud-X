@@ -43,8 +43,8 @@ def db_setup():
     yield db
     
     # Cleanup
-    db.query(DeceptionAction).delete()
-    db.query(DeceptionSession).delete()
+    db.query(DeceptionAction).filter(DeceptionAction.session_id == "test_sess_123").delete()
+    db.query(DeceptionSession).filter(DeceptionSession.session_id == "test_sess_123").delete()
     db.commit()
     db.close()
 

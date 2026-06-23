@@ -74,6 +74,8 @@ def test_fake_upload_trap():
     
     # Cleanup
     db.delete(upload)
+    from backend.app.models import DeceptionSession
+    db.query(DeceptionSession).filter(DeceptionSession.session_id == "test_session_123").delete()
     db.commit()
     db.close()
 

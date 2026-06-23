@@ -16,21 +16,20 @@ from .email_service import email_service
 from ..report_generator import generate_pdf_report, generate_csv_report
 from ..deception_engine.persona_engine import PersonaEngine
 from ..investigation_engine.mitre_mapper import MitreMapper
+from ..config import settings
 
 logger = logging.getLogger(__name__)
-
-STATE_FILE = "reports/scheduler_state.json"
 
 class ReportingScheduler:
     """Manages scheduling and generation of daily and weekly reports"""
     
     def __init__(self):
-        self.state_file = STATE_FILE
+        self.state_file = os.path.join(settings.reports_dir, "scheduler_state.json")
         self._ensure_reports_dir()
         self.state = self._load_state()
         
     def _ensure_reports_dir(self):
-        os.makedirs("reports", exist_ok=True)
+        os.makedirs(settings.reports_dir, exist_ok=True)
         
     def _load_state(self) -> Dict[str, Any]:
         if os.path.exists(self.state_file):
