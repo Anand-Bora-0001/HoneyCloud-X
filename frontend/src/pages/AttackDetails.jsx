@@ -289,7 +289,7 @@ const AttackDetails = () => {
               <div>
                 <span className="text-slate-500 text-xxs font-bold uppercase tracking-wider font-mono">Physical Geolocation</span>
                 <div className="text-slate-350 text-xs mt-0.5 font-semibold">
-                  {loc.city || 'Unknown Location'}, {loc.country || 'Unknown'} {getCountryFlag(loc.country)}
+                  {loc.city || 'Unknown Location'}, {loc.country || 'Unknown'} {loc.flag || '🏳️'}
                 </div>
               </div>
               <div>
