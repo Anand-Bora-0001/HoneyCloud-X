@@ -35,7 +35,6 @@ services:
   - type: web
     env: static
     name: honeycloud-frontend
-    plan: free
     buildCommand: "cd frontend && npm install && npm run build"
     staticPublishPath: ./frontend/dist
     pullRequestPreviewsEnabled: false
