@@ -30,11 +30,11 @@ services:
       - key: TELEGRAM_CHAT_ID
         sync: false
       - key: DEBUG
-        value: false
+        value: "false"
       - key: LOG_LEVEL
-        value: INFO
+        value: "INFO"
       - key: PYTHONUNBUFFERED
-        value: 1
+        value: "1"
 
   # Frontend Static Site
   - type: static
@@ -52,13 +52,16 @@ services:
     routes:
       - type: rewrite
         source: /api/*
-        destination: /api/*
+        destination: https://honeycloud-backend.onrender.com/api/*
       - type: rewrite
         source: /health
-        destination: /health
+        destination: https://honeycloud-backend.onrender.com/health
       - type: rewrite
         source: /docs
-        destination: /docs
+        destination: https://honeycloud-backend.onrender.com/docs
+      - type: rewrite
+        source: /*
+        destination: /index.html
 
   # Redis Cache
   - type: redis
