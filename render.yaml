@@ -37,7 +37,7 @@ services:
         value: "1"
 
   # Frontend Static Site
-  - type: static
+  - type: static_site
     name: honeycloud-frontend
     buildCommand: "cd frontend && npm install && npm run build"
     staticPublishPath: ./frontend/dist
