@@ -51,13 +51,13 @@ class TelegramConfigManager:
             bot_username = bot_info.get("username", "Unknown")
             
             # Test sending a message to the chat
-            test_message = f"🧪 HoneyCloud Configuration Test\n\n✅ Bot connected successfully!\n🤖 Bot: @{bot_username}\n📱 Chat ID: {chat_id}\n\nYour Telegram alerts are now configured."
+            test_message = f"🧪 <b>HoneyCloud Configuration Test</b>\n\n✅ Bot connected successfully!\n🤖 Bot: @{bot_username}\n📱 Chat ID: {chat_id}\n\nYour Telegram alerts are now configured."
             
             send_url = f"https://api.telegram.org/bot{bot_token}/sendMessage"
             send_payload = {
                 'chat_id': chat_id,
                 'text': test_message,
-                'parse_mode': 'Markdown'
+                'parse_mode': 'HTML'
             }
             
             send_response = requests.post(send_url, json=send_payload, timeout=10)

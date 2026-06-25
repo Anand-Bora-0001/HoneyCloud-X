@@ -9,8 +9,12 @@ logger = logging.getLogger(__name__)
 
 def generate_excel_report(events: list, stats: dict, filename: str = None) -> str:
     """Generate Excel report with formatting"""
+    from .config import settings
+    import os
+    os.makedirs(settings.reports_dir, exist_ok=True)
     if not filename:
-        filename = f"reports/attack_report_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx"
+        filename = os.path.join(settings.reports_dir, f"attack_report_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx")
+
 
     try:
         # Create workbook

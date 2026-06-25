@@ -1,5 +1,5 @@
 """
-HoneyCloud-X Reporting Scheduler Service
+HoneyCloud Reporting Scheduler Service
 Handles automatic daily summaries and weekly executive reports with attachments.
 """
 import os
@@ -65,7 +65,7 @@ class ReportingScheduler:
 
     async def run_scheduler(self):
         """Infinite loop executing the hourly scheduler checks"""
-        logger.info("📅 HoneyCloud-X Reporting Scheduler started")
+        logger.info("📅 HoneyCloud Reporting Scheduler started")
         while True:
             try:
                 await asyncio.sleep(3600)  # Check every hour
@@ -189,14 +189,14 @@ class ReportingScheduler:
                 org.name, total_attacks, critical_threats, top_persona, top_countries, top_services, mitre_details
             )
             
-            subject = f"📊 HoneyCloud-X Daily Security Report - {org.name}"
+            subject = f"📊 HoneyCloud Daily Security Report - {org.name}"
             
             # Send email asynchronously
             return await email_service.send_email(
                 to_emails=recipients,
                 subject=subject,
                 html_body=html_body,
-                text_body=f"HoneyCloud-X Daily Report: {total_attacks} attacks, {critical_threats} critical threats."
+                text_body=f"HoneyCloud Daily Report: {total_attacks} attacks, {critical_threats} critical threats."
             )
         except Exception as e:
             logger.error(f"Failed to generate Daily Security Summary: {e}")
@@ -269,11 +269,12 @@ class ReportingScheduler:
                 
             # Create attachments
             timestamp_str = datetime.now().strftime('%Y%m%d_%H%M%S')
-            pdf_path = f"reports/weekly_report_{org.id}_{timestamp_str}.pdf"
-            csv_path = f"reports/weekly_report_{org.id}_{timestamp_str}.csv"
+            pdf_path = os.path.join(settings.reports_dir, f"weekly_report_{org.id}_{timestamp_str}.pdf")
+            csv_path = os.path.join(settings.reports_dir, f"weekly_report_{org.id}_{timestamp_str}.csv")
             
             generate_pdf_report(events, stats, pdf_path)
             generate_csv_report(events, csv_path)
+
             
             # Check if PDF exists (it could have generated a .txt fallback)
             attachments = []
@@ -290,14 +291,14 @@ class ReportingScheduler:
                 org.name, current_week_count, prev_week_events, growth_rate, campaigns, severity_counts
             )
             
-            subject = f"📊 HoneyCloud-X Weekly Executive Report - {org.name}"
+            subject = f"📊 HoneyCloud Weekly Executive Report - {org.name}"
             
             # Send Email
             success = await email_service.send_email(
                 to_emails=recipients,
                 subject=subject,
                 html_body=html_body,
-                text_body=f"HoneyCloud-X Weekly Report: {current_week_count} attacks, growth trend {growth_rate:.1f}%. Attachments attached.",
+                text_body=f"HoneyCloud Weekly Report: {current_week_count} attacks, growth trend {growth_rate:.1f}%. Attachments attached.",
                 attachments=attachments
             )
             
@@ -347,13 +348,13 @@ class ReportingScheduler:
             <div style="max-width: 600px; margin: 0 auto; background-color: #1e293b; border-radius: 8px; border: 1px solid rgba(255, 255, 255, 0.05); overflow: hidden; padding: 24px; color: #f8fafc;">
                 
                 <div style="border-bottom: 2px solid #38bdf8; padding-bottom: 12px; margin-bottom: 20px; text-align:center;">
-                    <h1 style="margin: 0; color: #38bdf8; font-size: 24px;">📊 HoneyCloud-X Daily Security Report</h1>
+                    <h1 style="margin: 0; color: #38bdf8; font-size: 24px;">📊 HoneyCloud Daily Security Report</h1>
                     <p style="margin: 4px 0 0 0; color: #94a3b8; font-size: 13px; text-transform:uppercase;">Organization: {org_name}</p>
                 </div>
                 
                 <h3 style="color:#38bdf8; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom:4px; margin-top:0;">🛡️ Executive Summary</h3>
                 <p style="color:#cbd5e1; font-size:14px; line-height:1.5;">
-                    Over the last 24 hours, HoneyCloud-X monitored active endpoints for potential incursion activities. A total of <strong>{total_attacks}</strong> threat vectors were identified and contained. Of these, <strong>{critical}</strong> events were classified as Critical severity, requiring immediate attention. The dominant actor profile was classified as <strong>{top_persona}</strong>.
+                    Over the last 24 hours, HoneyCloud monitored active endpoints for potential incursion activities. A total of <strong>{total_attacks}</strong> threat vectors were identified and contained. Of these, <strong>{critical}</strong> events were classified as Critical severity, requiring immediate attention. The dominant actor profile was classified as <strong>{top_persona}</strong>.
                 </p>
                 
                 <div style="margin-top: 20px;">
@@ -387,7 +388,7 @@ class ReportingScheduler:
                 </div>
 
                 <div style="margin-top: 30px; text-align: center; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 15px; font-size: 11px; color: #64748b;">
-                    <p style="margin: 0;">This report is generated dynamically by HoneyCloud-X SOC Scheduler.</p>
+                    <p style="margin: 0;">This report is generated dynamically by HoneyCloud SOC Scheduler.</p>
                 </div>
             </div>
         </body>
@@ -423,13 +424,13 @@ class ReportingScheduler:
             <div style="max-width: 600px; margin: 0 auto; background-color: #1e293b; border-radius: 8px; border: 1px solid rgba(255, 255, 255, 0.05); overflow: hidden; padding: 24px; color: #f8fafc;">
                 
                 <div style="border-bottom: 2px solid #a855f7; padding-bottom: 12px; margin-bottom: 20px; text-align:center;">
-                    <h1 style="margin: 0; color: #a855f7; font-size: 24px;">📊 HoneyCloud-X Weekly Executive Report</h1>
+                    <h1 style="margin: 0; color: #a855f7; font-size: 24px;">📊 HoneyCloud Weekly Executive Report</h1>
                     <p style="margin: 4px 0 0 0; color: #94a3b8; font-size: 13px; text-transform:uppercase;">Organization: {org_name}</p>
                 </div>
                 
                 <h3 style="color:#a855f7; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom:4px; margin-top:0;">🛡️ Executive Summary</h3>
                 <p style="color:#cbd5e1; font-size:14px; line-height:1.5;">
-                    We are pleased to deliver this weekly intelligence brief from HoneyCloud-X. Over the last 7 days, HoneyCloud-X monitored decoy sensors and logged <strong>{total_attacks}</strong> total threat attempts.
+                    We are pleased to deliver this weekly intelligence brief from HoneyCloud. Over the last 7 days, HoneyCloud monitored decoy sensors and logged <strong>{total_attacks}</strong> total threat attempts.
                     Compare to the previous week ({prev_attacks} attempts), this represents a <strong style="color: {growth_color};">{growth_text}</strong>.
                 </p>
                 

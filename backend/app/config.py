@@ -118,6 +118,28 @@ class Settings(BaseSettings):
             except Exception as e:
                 logging.getLogger("HoneyCloud").warning(f"Failed to parse TELEGRAM_CONFIG JSON: {e}")
 
+        # Resolve base directory relative to backend if running from root
+        from pathlib import Path
+        base_dir = Path("backend") if Path("backend").is_dir() else Path(".")
+        
+        # Resolve reports_dir and logs_dir if they are relative paths
+        reports_path = Path(self.reports_dir)
+        if not reports_path.is_absolute():
+            self.reports_dir = str((base_dir / reports_path).resolve())
+            
+        logs_path = Path(self.logs_dir)
+        if not logs_path.is_absolute():
+            self.logs_dir = str((base_dir / logs_path).resolve())
+            
+        # Resolve database_url if it's a relative sqlite database
+        if (self.database_url.startswith("sqlite:///./") or self.database_url.startswith("sqlite:///")) and not self.database_url.endswith(":memory:"):
+            db_rel = self.database_url.split("sqlite:///", 1)[1]
+            if db_rel.startswith("./"):
+                db_rel = db_rel[2:]
+            db_path = (base_dir / db_rel).resolve()
+            self.database_url = f"sqlite:///{db_path.as_posix()}"
+
+
     @property
     def is_telegram_configured(self) -> bool:
         """Check if Telegram is properly configured"""

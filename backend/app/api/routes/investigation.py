@@ -42,16 +42,26 @@ def get_investigation_details(
             raise HTTPException(status_code=404, detail="Profile not found")
         return {"status": "pending", "message": "Investigation not generated yet"}
         
+    import json
+    
+    def safe_json(val):
+        if isinstance(val, str):
+            try:
+                return json.loads(val)
+            except:
+                pass
+        return val
+
     return {
         "status": "ready",
         "id": report.id,
         "narrative": report.summary_narrative,
         "executive": report.executive_summary,
         "technical": report.technical_summary,
-        "mitre_mapping": report.mitre_mapping,
-        "attack_paths": report.attack_paths,
-        "risk_evolution": report.risk_evolution_trend,
-        "evidence": report.evidence_summary,
+        "mitre_mapping": safe_json(report.mitre_mapping),
+        "attack_paths": safe_json(report.attack_paths),
+        "risk_evolution": safe_json(report.risk_evolution_trend),
+        "evidence": safe_json(report.evidence_summary),
         "updated_at": report.updated_at.isoformat() if report.updated_at else None
     }
 

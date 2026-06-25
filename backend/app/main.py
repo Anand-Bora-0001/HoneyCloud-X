@@ -1,5 +1,5 @@
 """
-HoneyCloud-X: Production-Grade Honeypot Intelligence Platform
+HoneyCloud: Production-Grade Honeypot Intelligence Platform
 =============================================================
 App Factory — Thin orchestrator that mounts routers and middleware.
 
@@ -170,64 +170,77 @@ def _load_enhancements():
 _BACKEND_DIR = Path(__file__).resolve().parent.parent
 _PROJECT_DIR = _BACKEND_DIR.parent
 _FRONTEND_DIR = _PROJECT_DIR / "frontend"
+from .config import settings
+os.makedirs(settings.reports_dir, exist_ok=True)
 
-os.makedirs("reports", exist_ok=True)
 
-if _FRONTEND_DIR.exists():
-    app.mount("/css", StaticFiles(directory=str(_FRONTEND_DIR / "css")), name="frontend_css")
-    app.mount("/js", StaticFiles(directory=str(_FRONTEND_DIR / "js")), name="frontend_js")
-    if (_FRONTEND_DIR / "assets").exists():
-        app.mount("/assets", StaticFiles(directory=str(_FRONTEND_DIR / "assets")), name="frontend_assets")
+_DIST_DIR = _FRONTEND_DIR / "dist"
+_VANILLA_DIR = _PROJECT_DIR / "frontend-vanilla"
+
+if _DIST_DIR.exists():
+    app.mount("/assets", StaticFiles(directory=str(_DIST_DIR / "assets")), name="frontend_assets")
     
-    # Keep the old /static just in case
-    app.mount("/static", StaticFiles(directory=str(_FRONTEND_DIR)), name="frontend_static")
-    # Base routes for frontend application pages
     @app.get("/")
     async def root():
-        """Serve the landing page at root."""
-        return FileResponse(str(_FRONTEND_DIR / "index.html"))
+        """Serve index.html at root."""
+        return FileResponse(str(_DIST_DIR / "index.html"))
+
+    @app.get("/{catchall:path}")
+    async def catch_all(catchall: str):
+        """Catch-all redirecting to index.html for SPA router (ignoring api/auth/docs endpoints)."""
+        if catchall.startswith(("api", "auth", "docs", "redoc", "openapi.json", "health")):
+            raise HTTPException(status_code=404, detail="Not found")
+        return FileResponse(str(_DIST_DIR / "index.html"))
+
+    logger.info(f"React Frontend served from: {_DIST_DIR}")
+
+elif _VANILLA_DIR.exists():
+    if (_VANILLA_DIR / "css").exists():
+        app.mount("/css", StaticFiles(directory=str(_VANILLA_DIR / "css")), name="frontend_css")
+    if (_VANILLA_DIR / "js").exists():
+        app.mount("/js", StaticFiles(directory=str(_VANILLA_DIR / "js")), name="frontend_js")
+    if (_VANILLA_DIR / "assets").exists():
+        app.mount("/assets", StaticFiles(directory=str(_VANILLA_DIR / "assets")), name="frontend_assets")
+    
+    app.mount("/static", StaticFiles(directory=str(_VANILLA_DIR)), name="frontend_static")
+    
+    @app.get("/")
+    async def root():
+        return FileResponse(str(_VANILLA_DIR / "index.html"))
 
     @app.get("/login.html")
     async def serve_login():
-        """Serve the login page."""
-        return FileResponse(str(_FRONTEND_DIR / "login.html"))
+        return FileResponse(str(_VANILLA_DIR / "login.html"))
 
     @app.get("/dashboard.html")
     async def serve_dashboard():
-        """Serve the dashboard page."""
-        return FileResponse(str(_FRONTEND_DIR / "dashboard.html"))
+        return FileResponse(str(_VANILLA_DIR / "dashboard.html"))
 
     @app.get("/attack-details.html")
     async def serve_attack_details():
-        """Serve the attack details page."""
-        return FileResponse(str(_FRONTEND_DIR / "attack-details.html"))
+        return FileResponse(str(_VANILLA_DIR / "attack-details.html"))
 
     @app.get("/reports.html")
     async def serve_reports():
-        """Serve the reports page."""
-        return FileResponse(str(_FRONTEND_DIR / "reports.html"))
+        return FileResponse(str(_VANILLA_DIR / "reports.html"))
 
     @app.get("/recycle-bin.html")
     async def serve_recycle_bin():
-        """Serve the recycle bin page."""
-        return FileResponse(str(_FRONTEND_DIR / "recycle-bin.html"))
+        return FileResponse(str(_VANILLA_DIR / "recycle-bin.html"))
 
     @app.get("/settings.html")
     async def serve_settings():
-        """Serve the settings page."""
-        return FileResponse(str(_FRONTEND_DIR / "settings.html"))
+        return FileResponse(str(_VANILLA_DIR / "settings.html"))
 
-    # Note: Catch-all to support development without exact path matching, if desired.
     @app.get("/{filename}.html")
     async def serve_html(filename: str):
-        file_path = _FRONTEND_DIR / f"{filename}.html"
+        file_path = _VANILLA_DIR / f"{filename}.html"
         if file_path.exists():
             return FileResponse(str(file_path))
         raise HTTPException(status_code=404, detail="Page not found")
 
     @app.get("/config.js", include_in_schema=False)
     async def serve_config_js():
-        """Serve config dynamically reading from backend environment"""
         api_base = os.getenv("VITE_API_URL", "")
         content = f"""
 const CONFIG = {{
@@ -238,14 +251,14 @@ console.log('[HoneyCloud] Dynamic Configuration Loaded: ' + (CONFIG.API_BASE || 
 """
         return HTMLResponse(content=content, media_type="application/javascript")
 
-    logger.info(f"Frontend served from: {_FRONTEND_DIR}")
+    logger.info(f"Legacy Vanilla Frontend served from: {_VANILLA_DIR}")
+
 else:
-    # API-only mode health check
     @app.get("/")
     def root():
         return {"status": "healthy", "service": settings.app_name, "version": settings.app_version}
 
-    logger.warning(f"Frontend not found at {_FRONTEND_DIR}")
+    logger.warning(f"Frontend static directories not found.")
 
 # ========================
 # LOCAL RUN

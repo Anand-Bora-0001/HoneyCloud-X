@@ -81,9 +81,16 @@ class ThreatRoutingEngine:
     def _get_or_create_profile(self, source_ip: str, organization_id: int) -> AttackerProfile:
         profile = self.db.query(AttackerProfile).filter_by(source_ip=source_ip, organization_id=organization_id).first()
         if not profile:
-            profile = AttackerProfile(source_ip=source_ip, organization_id=organization_id)
-            self.db.add(profile)
-            self.db.commit()
+            try:
+                profile = AttackerProfile(source_ip=source_ip, organization_id=organization_id)
+                self.db.add(profile)
+                self.db.commit()
+            except Exception:
+                # Another concurrent request already inserted this profile (race condition)
+                self.db.rollback()
+                profile = self.db.query(AttackerProfile).filter_by(source_ip=source_ip, organization_id=organization_id).first()
+                if not profile:
+                    raise
         return profile
 
     def _get_active_session(self, source_ip: str, organization_id: int, service_id: int, user_agent: str) -> DeceptionSession:

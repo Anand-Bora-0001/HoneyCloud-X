@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Database Schema Update for HoneyCloud-X
+Database Schema Update for HoneyCloud
 Applies migrations to add new notification preference and statistics columns.
 """
 import sys

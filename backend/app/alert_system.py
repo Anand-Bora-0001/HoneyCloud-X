@@ -260,8 +260,8 @@ def handle_attack_event(event: dict, db: Session = None) -> None:
             return
             
         # Parallel Routing Rules:
-        # Telegram: Only on CRITICAL severity
-        send_tg = telegram_enabled and (severity == 'CRITICAL')
+        # Telegram: On CRITICAL severity OR when deception is recommended (i.e. trapped an attacker)
+        send_tg = telegram_enabled and (severity == 'CRITICAL' or event.get('recommended_route') == 'DECEPTION')
         
         # Email: On CRITICAL and HIGH severity
         send_mail = email_enabled and (severity in ['CRITICAL', 'HIGH'])

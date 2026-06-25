@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Body
 from sqlalchemy.orm import Session
 from datetime import datetime, timezone
 
@@ -44,7 +44,7 @@ def get_deleted_items(
 
 @router.post("/restore")
 def restore_items(
-    payload: dict,
+    payload: dict = Body(default={}),
     current_user: dict = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
@@ -83,7 +83,7 @@ def restore_items(
 
 @router.delete("/permanent")
 def permanent_delete(
-    payload: dict = {},
+    payload: dict = Body(default={}),
     current_user: dict = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):

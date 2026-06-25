@@ -113,7 +113,8 @@ def generate_report(
 @router.get("/download")
 def download_report(file: str):
     """Download a generated report file"""
-    filepath = os.path.join("reports", file)
+    filepath = os.path.join(settings.reports_dir, file)
+
 
     if not os.path.exists(filepath):
         raise HTTPException(status_code=404, detail="Report file not found")

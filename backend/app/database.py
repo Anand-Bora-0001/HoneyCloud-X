@@ -16,9 +16,20 @@ logger = logging.getLogger(__name__)
 
 DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./honeycloud.db")
 
+# Resolve sqlite path relative to backend directory if running from root
+if (DATABASE_URL.startswith("sqlite:///./") or DATABASE_URL.startswith("sqlite:///")) and not DATABASE_URL.endswith(":memory:"):
+    from pathlib import Path
+    base_dir = Path("backend") if Path("backend").is_dir() else Path(".")
+    db_rel = DATABASE_URL.split("sqlite:///", 1)[1]
+    if db_rel.startswith("./"):
+        db_rel = db_rel[2:]
+    db_path = (base_dir / db_rel).resolve()
+    DATABASE_URL = f"sqlite:///{db_path.as_posix()}"
+
 # Fix Heroku/Render postgres:// → postgresql://
 if DATABASE_URL.startswith("postgres://"):
     DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
+
 
 # ========================
 # ENGINE CREATION

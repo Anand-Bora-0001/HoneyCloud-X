@@ -105,7 +105,7 @@ async def test_email_alert(
             # Send synchronously to catch exact exception for detailed error logs
             success = email_service.send_email_sync(
                 to_emails=[email_address],
-                subject="🚨 HoneyCloud-X Test Threat Alert",
+                subject="🚨 HoneyCloud Test Threat Alert",
                 html_body=email_service._generate_alert_html("Test Security Alert", test_event),
                 text_body=email_service._generate_alert_text("Test Security Alert", test_event),
                 attachments=[pdf_path] if pdf_path else None

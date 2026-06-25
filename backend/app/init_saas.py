@@ -125,7 +125,11 @@ def init_saas_platform():
         # Step 5: Create demo services
         print("\n🔧 Creating demo services...")
         
-        service1 = db.query(Service).filter(Service.slug == "demo-ecommerce").first()
+        # IMPORTANT: This API key MUST match the hardcoded key in demo-ecommerce/app.py
+        DEMO_ECOMMERCE_API_KEY = "hc_live_fsj-onia9stXSc2HgIuUDqfwR_f5Oe0Q4sTZTMhBku0"
+        service1 = db.query(Service).filter(Service.api_key == DEMO_ECOMMERCE_API_KEY).first()
+        if not service1:
+            service1 = db.query(Service).filter(Service.slug == "demo-ecommerce").first()
         if not service1:
             service1 = Service(
                 organization_id=demo_org1.id,
@@ -133,12 +137,17 @@ def init_saas_platform():
                 slug="demo-ecommerce",
                 description="Demo e-commerce website with honeypots",
                 service_type="web",
-                api_key=generate_api_key(),
+                api_key=DEMO_ECOMMERCE_API_KEY,
                 is_active=True
             )
             db.add(service1)
             print(f"   ✅ Created service: Demo E-Commerce")
-            print(f"      API Key: {service1.api_key}")
+            print(f"      API Key: {DEMO_ECOMMERCE_API_KEY}")
+        elif service1.organization_id != demo_org1.id or service1.api_key != DEMO_ECOMMERCE_API_KEY:
+            # Fix org mapping and pin the API key if created previously with wrong values
+            service1.organization_id = demo_org1.id
+            service1.api_key = DEMO_ECOMMERCE_API_KEY
+            print(f"   🔧 Fixed service: Demo E-Commerce → Org {demo_org1.id}")
         
         service2 = db.query(Service).filter(Service.slug == "acme-api").first()
         if not service2:

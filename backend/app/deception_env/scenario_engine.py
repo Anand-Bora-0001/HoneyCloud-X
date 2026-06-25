@@ -1,7 +1,7 @@
 import re
 from typing import Optional
-from backend.app.database import SessionLocal
-from backend.app.models import DeceptionScenario
+from ..database import SessionLocal
+from ..models import DeceptionScenario
 import logging
 
 logger = logging.getLogger(__name__)

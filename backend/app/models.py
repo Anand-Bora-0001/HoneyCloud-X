@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Float, DateTime, Text, JSON, Boolean, ForeignKey, Index
+from sqlalchemy import Column, Integer, String, Float, DateTime, Text, JSON, Boolean, ForeignKey, Index, UniqueConstraint
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from .database import Base
@@ -314,9 +314,12 @@ class BillingHistory(Base):
 
 class AttackerProfile(Base):
     __tablename__ = "attacker_profiles"
+    __table_args__ = (
+        UniqueConstraint('source_ip', 'organization_id', name='uix_attacker_ip_org'),
+    )
     
     id = Column(Integer, primary_key=True, index=True)
-    source_ip = Column(String(45), unique=True, index=True, nullable=False)
+    source_ip = Column(String(45), index=True, nullable=False)
     
     organization_id = Column(Integer, ForeignKey("organizations.id"), nullable=False)
     

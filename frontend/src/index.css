@@ -1,0 +1,115 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --honey: #F6A623;
+    --honey-glow: rgba(246, 166, 35, 0.15);
+    --amber: #E8912D;
+    
+    --bg-primary: #0B0F14;
+    --bg-surface: #111827;
+    --bg-surface-hover: #1F2937;
+    --bg-elevated: #1F2937;
+    --border: rgba(255, 255, 255, 0.08);
+    --border-subtle: rgba(255, 255, 255, 0.04);
+    
+    --text-primary: #F3F4F6;
+    --text-secondary: #9CA3AF;
+    --text-muted: #6B7280;
+    
+    --success: #10B981;
+    --warning: #F59E0B;
+    --danger: #EF4444;
+    --info: #3B82F6;
+  }
+
+  .theme-midnight-amber {
+    --honey: #FFC14D;
+    --honey-glow: rgba(255, 193, 77, 0.15);
+    --amber: #F6A623;
+    --bg-primary: #070A0E;
+    --bg-surface: #0D1117;
+    --bg-surface-hover: #161D26;
+    --bg-elevated: #161D26;
+  }
+
+  .theme-obsidian {
+    --honey: #C47B1A;
+    --honey-glow: rgba(196, 123, 26, 0.15);
+    --amber: #A3620F;
+    --bg-primary: #050505;
+    --bg-surface: #0C0C0C;
+    --bg-surface-hover: #141414;
+    --bg-elevated: #141414;
+  }
+
+  body {
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
+    transition: background-color 0.3s ease, color 0.3s ease;
+  }
+}
+
+/* Custom Leaflet Map Rules */
+.leaflet-container {
+  background: #060A10 !important;
+  font-family: inherit;
+}
+.leaflet-popup-content-wrapper {
+  background: var(--bg-surface) !important;
+  border: 1px solid var(--border) !important;
+  border-radius: 8px !important;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.5) !important;
+  color: var(--text-primary) !important;
+}
+.leaflet-popup-tip {
+  background: var(--bg-surface) !important;
+  border: 1px solid var(--border) !important;
+}
+
+/* Threat Map Ping Animations */
+@keyframes ping-pulse {
+  0% { transform: scale(0.5); opacity: 1; }
+  100% { transform: scale(3); opacity: 0; }
+}
+
+.map-ping {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  position: absolute;
+  box-shadow: 0 0 8px currentColor;
+}
+
+.map-ping::after {
+  content: '';
+  position: absolute;
+  inset: -4px;
+  border: 2px solid currentColor;
+  border-radius: 50%;
+  animation: ping-pulse 2s ease-out infinite;
+}
+
+/* Glassmorphism scrollbar overrides */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.25);
+}
+
+/* Custom Grid background dynamic styling */
+.grid-bg-active {
+  background-image: radial-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 1px);
+  background-size: 24px 24px;
+}

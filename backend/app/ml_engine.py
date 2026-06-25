@@ -2,18 +2,19 @@
 HoneyCloud Advanced ML Engine with Random Forest
 Provides intelligent threat detection, anomaly detection, and attack classification
 """
+import hashlib
+import json
 import logging
+import sys
+from dataclasses import dataclass, asdict
+from datetime import datetime, timedelta
+from pathlib import Path
+from typing import Dict, List, Optional, Tuple, Any
+
+# ML and third-party imports
+import joblib
 import numpy as np
 import pandas as pd
-import joblib
-import json
-import hashlib
-from datetime import datetime, timedelta
-from typing import Dict, List, Optional, Tuple, Any
-from dataclasses import dataclass, asdict
-from pathlib import Path
-
-# ML imports
 from sklearn.ensemble import RandomForestClassifier, IsolationForest
 from sklearn.model_selection import train_test_split, cross_val_score, GridSearchCV
 from sklearn.preprocessing import StandardScaler, LabelEncoder
@@ -22,6 +23,11 @@ from sklearn.feature_extraction.text import TfidfVectorizer
 from imblearn.over_sampling import SMOTE
 import matplotlib.pyplot as plt
 import seaborn as sns
+
+# Add backend directory to path to allow unpickling models saved with 'app' prefix
+backend_dir = Path(__file__).resolve().parent.parent
+if str(backend_dir) not in sys.path:
+    sys.path.insert(0, str(backend_dir))
 
 from .config import settings
 
@@ -378,8 +384,10 @@ class RandomForestMLEngine:
         self.scaler = StandardScaler()
         self.feature_extractor = FeatureExtractor()
         self.model_version = "1.0.0"
-        self.model_path = Path("models")
+        backend_dir = Path(__file__).resolve().parent.parent
+        self.model_path = backend_dir / "models"
         self.model_path.mkdir(exist_ok=True)
+
         
         # Model parameters
         self.rf_params = {

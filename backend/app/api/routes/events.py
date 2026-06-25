@@ -48,9 +48,22 @@ def process_event_async(event: Dict, source_ip: str, org_id: int, service_id: in
     from ...models import AttackEvent
     from ...deception_engine import ThreatRoutingEngine
     from ...deception_engine.persona_engine import PersonaEngine
+    import requests
     
     db = SessionLocal()
     try:
+        # Resolve loopback/private IPs to the actual public IP of the server/user so it geolocates correctly
+        if source_ip in ("127.0.0.1", "localhost", "::1") or source_ip.startswith(("192.168.", "10.", "172.16.", "172.17.", "172.18.", "172.19.", "172.20.", "172.21.", "172.22.", "172.23.", "172.24.", "172.25.", "172.26.", "172.27.", "172.28.", "172.29.", "172.30.", "172.31.")):
+            try:
+                response = requests.get("https://api.ipify.org?format=json", timeout=3)
+                if response.ok:
+                    pub_ip = response.json().get("ip")
+                    if pub_ip:
+                        source_ip = pub_ip
+                        logger.info(f"[GEO] Resolved local source IP to public IP: {source_ip}")
+            except Exception as e:
+                logger.warning(f"Failed to resolve private IP {source_ip} to public IP: {e}")
+
         location_data = get_location_from_ip(source_ip)
 
         # ML prediction (if available)
@@ -79,6 +92,13 @@ def process_event_async(event: Dict, source_ip: str, org_id: int, service_id: in
         # Routing decision is now calculated synchronously in ingest_event
         # We just use the passed route_decision
 
+        # Severity: take the higher of the original event severity vs ML prediction
+        # ML should escalate threats but never downgrade a CRITICAL to HIGH
+        _severity_rank = {"LOW": 1, "MEDIUM": 2, "HIGH": 3, "CRITICAL": 4}
+        _original_severity = event.get("severity", "MEDIUM").upper()
+        _ml_severity = ml_prediction.threat_level.upper() if ml_prediction else _original_severity
+        _final_severity = _original_severity if _severity_rank.get(_original_severity, 0) >= _severity_rank.get(_ml_severity, 0) else _ml_severity
+
         # Enrich event
         enriched_event = {
             "timestamp": event.get("timestamp", datetime.now(timezone.utc).isoformat()),
@@ -91,7 +111,7 @@ def process_event_async(event: Dict, source_ip: str, org_id: int, service_id: in
             "payload": event.get("payload"),
             "method": event.get("method", "UNKNOWN"),
             "endpoint": event.get("endpoint"),
-            "severity": ml_prediction.threat_level if ml_prediction else event.get("severity", "MEDIUM"),
+            "severity": _final_severity,
             "ai_label": "ml_predicted" if ml_prediction else event.get("ai_label", "anomaly"),
             "threat_score": route_decision["threat_score"],
             "ml_confidence": ml_prediction.confidence if ml_prediction else 0.0,
@@ -111,9 +131,24 @@ def process_event_async(event: Dict, source_ip: str, org_id: int, service_id: in
             "recommended_route": route_decision["recommended_route"]
         }
 
+        # Convert timestamp string to timezone-aware datetime object
+        event_time_str = enriched_event.get("timestamp")
+        event_timestamp = None
+        if event_time_str:
+            try:
+                if event_time_str.endswith('Z'):
+                    event_time_str = event_time_str[:-1] + '+00:00'
+                event_timestamp = datetime.fromisoformat(event_time_str)
+            except Exception as ts_err:
+                logger.warning(f"Failed to parse event timestamp '{event_time_str}': {ts_err}")
+                event_timestamp = datetime.now(timezone.utc)
+        else:
+            event_timestamp = datetime.now(timezone.utc)
+
         # Save to database
         db_event = AttackEvent(
             organization_id=org_id,
+            timestamp=event_timestamp,
             service_name=enriched_event["service"],
             source_ip=source_ip,
             source_port=enriched_event.get("source_port", 0),
@@ -203,13 +238,16 @@ async def ingest_event(
         
         if not service_record:
             if x_api_key == "hc_live_fsj-onia9stXSc2HgIuUDqfwR_f5Oe0Q4sTZTMhBku0":
-                org = db.query(Organization).first()
+                # Always map the demo ecommerce key to demo-startup org
+                org = db.query(Organization).filter(Organization.slug == "demo-startup").first()
                 if not org:
-                    org = Organization(name="Demo Organization", slug="demo-org", email="demo@honeycloud.local", plan="free", is_trial=True)
+                    org = db.query(Organization).first()
+                if not org:
+                    org = Organization(name="Demo Startup", slug="demo-startup", email="demo@honeycloud.local", plan="free", is_trial=True)
                     db.add(org)
                     db.commit()
                     db.refresh(org)
-                service_record = Service(name="Demo Service", slug="demo-service", api_key=x_api_key, organization_id=org.id)
+                service_record = Service(name="Demo E-Commerce", slug="demo-ecommerce", api_key=x_api_key, organization_id=org.id)
                 db.add(service_record)
                 db.commit()
                 db.refresh(service_record)
@@ -465,8 +503,11 @@ async def event_stream(current_user: dict = Depends(get_current_user)):
         q = broadcaster.add_queue()
         try:
             while True:
-                event = await q.get()
-                yield {"event": "new_attack", "data": json.dumps(event)}
+                try:
+                    event = await asyncio.wait_for(q.get(), timeout=15.0)
+                    yield {"event": "new_attack", "data": json.dumps(event)}
+                except asyncio.TimeoutError:
+                    yield {"event": "ping", "data": "keepalive"}
         except asyncio.CancelledError:
             pass
         finally:

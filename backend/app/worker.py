@@ -8,11 +8,12 @@ import logging
 logger = logging.getLogger(__name__)
 
 REDIS_URL = os.getenv("REDIS_URL", "")
+USE_CELERY = os.getenv("USE_CELERY", "true").lower() in ("true", "1", "yes")
 CELERY_AVAILABLE = False
 celery_app = None
 
 try:
-    if REDIS_URL:
+    if REDIS_URL and USE_CELERY:
         from celery import Celery
 
         celery_app = Celery(

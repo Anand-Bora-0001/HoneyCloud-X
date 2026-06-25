@@ -22,11 +22,12 @@ def generate_csv_report(events: List[dict], filename: str = None) -> str:
     Returns:
         Path to generated CSV file
     """
+    from .config import settings
     # Ensure reports directory exists
-    os.makedirs("reports", exist_ok=True)
+    os.makedirs(settings.reports_dir, exist_ok=True)
     
     if not filename:
-        filename = f"reports/attack_report_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"
+        filename = os.path.join(settings.reports_dir, f"attack_report_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv")
     
     try:
         with open(filename, 'w', newline='', encoding='utf-8') as csvfile:
@@ -62,12 +63,13 @@ def generate_pdf_report(events: List[dict], stats: dict, filename: str = None) -
     Returns:
         Path to generated report file
     """
+    from .config import settings
     # Ensure reports directory exists
-    os.makedirs("reports", exist_ok=True)
+    os.makedirs(settings.reports_dir, exist_ok=True)
     
     if not filename:
         timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-        filename = f"reports/attack_report_{timestamp}.pdf"
+        filename = os.path.join(settings.reports_dir, f"attack_report_{timestamp}.pdf")
     
     try:
         # Try to generate actual PDF

@@ -39,8 +39,8 @@ services:
   # Frontend Static Site
   - type: static
     name: honeycloud-frontend
-    buildCommand: "echo 'Static site ready'"
-    staticPublishPath: ./frontend
+    buildCommand: "cd frontend && npm install && npm run build"
+    staticPublishPath: ./frontend/dist
     pullRequestPreviewsEnabled: false
     headers:
       - path: /*

@@ -38,7 +38,7 @@ def generate_report_async(self, report_format: str, events: list, stats: dict, s
         from ..report_generator import generate_csv_report, generate_pdf_report
         from ..excel_export import generate_excel_report
 
-        if report_format == "xlsx":
+        if report_format in ["xlsx", "excel"]:
             filepath = generate_excel_report(events, stats)
         elif report_format == "csv":
             filepath = generate_csv_report(events)
