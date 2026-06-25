@@ -70,6 +70,9 @@ services:
     region: oregon
     plan: starter
     maxmemoryPolicy: allkeys-lru
+    ipAllowList:
+      - source: 0.0.0.0/0
+        description: everywhere
 
 databases:
   - name: honeycloud-db
@@ -77,3 +80,6 @@ databases:
     user: honeycloud
     region: oregon
     plan: starter
+    ipAllowList:
+      - source: 0.0.0.0/0
+        description: everywhere
