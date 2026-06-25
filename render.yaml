@@ -52,6 +52,9 @@ services:
         source: /api/*
         destination: https://honeycloud-backend.onrender.com/api/*
       - type: rewrite
+        source: /auth/*
+        destination: https://honeycloud-backend.onrender.com/auth/*
+      - type: rewrite
         source: /health
         destination: https://honeycloud-backend.onrender.com/health
       - type: rewrite
