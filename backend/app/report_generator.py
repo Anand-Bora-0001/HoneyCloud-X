@@ -88,7 +88,7 @@ def generate_pdf_report(events: List[dict], stats: dict, filename: str = None) -
 
 def _format_risk_score(severity: str, raw_score: float) -> str:
     """Format the risk score into logical buckets based on severity."""
-    severity = str(severity).upper() if severity else "UNKNOWN"
+    severity = str(severity).upper().strip() if severity else "UNKNOWN"
     
     if raw_score is None:
         raw_score = 0.5
