@@ -3,8 +3,8 @@ from openpyxl.styles import Font, PatternFill, Alignment
 from openpyxl.utils import get_column_letter
 from datetime import datetime
 import logging
-
-logger = logging.getLogger(__name__)
+import logging
+from .report_generator import _format_risk_score
 
 
 def generate_excel_report(events: list, stats: dict, filename: str = None) -> str:
@@ -82,8 +82,13 @@ def generate_excel_report(events: list, stats: dict, filename: str = None) -> st
             elif severity == 'HIGH':
                 severity_cell.fill = PatternFill(start_color="FFFF9500", end_color="FFFF9500", fill_type="solid")
             
+            
             ws.cell(row=row, column=7).value = event.get('ai_label')
-            ws.cell(row=row, column=8).value = event.get('threat_score')
+            
+            threat_score = event.get('threat_score', 0.0)
+            risk_score_str = _format_risk_score(severity, threat_score)
+            ws.cell(row=row, column=8).value = risk_score_str
+            
             ws.cell(row=row, column=9).value = event.get('command')
             
             row += 1
