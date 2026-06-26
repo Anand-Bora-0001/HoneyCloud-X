@@ -46,6 +46,7 @@ class Settings(BaseSettings):
     smtp_use_tls: bool = True
     alert_email_to: Optional[str] = None
     alert_email_from: Optional[str] = None
+    resend_api_key: Optional[str] = None
     
     # Rate Limiting
     rate_limit_per_minute: int = 100

@@ -34,7 +34,9 @@ class EmailService:
         
     def is_configured(self) -> bool:
         """Check if email service is properly configured and enabled"""
-        return bool(settings.email_enabled and self.smtp_server and self.username and self.password)
+        if not settings.email_enabled:
+            return False
+        return bool(settings.resend_api_key or (self.smtp_server and self.username and self.password))
     
     async def send_email(
         self,
@@ -45,7 +47,7 @@ class EmailService:
         attachments: Optional[List[str]] = None
     ) -> bool:
         """
-        Asynchronously send email by running the blocking SMTP operations in a thread pool executor.
+        Asynchronously send email by running the blocking SMTP/HTTP operations in a thread pool executor.
         """
         if not self.is_configured():
             logger.warning("Email service is not configured or is disabled. Skipping dispatch.")
@@ -62,6 +64,82 @@ class EmailService:
             attachments
         )
         
+    def send_via_resend(
+        self,
+        to_emails: List[str],
+        subject: str,
+        html_body: str,
+        text_body: Optional[str] = None,
+        attachments: Optional[List[str]] = None
+    ) -> bool:
+        """Send email via Resend's HTTP API"""
+        import requests
+        import base64
+        
+        logger.info(f"Dispatching email via Resend API to {', '.join(to_emails)}")
+        
+        url = "https://api.resend.com/emails"
+        headers = {
+            "Authorization": f"Bearer {settings.resend_api_key}",
+            "Content-Type": "application/json"
+        }
+        
+        # Determine sender address
+        # Resend free tier/unverified accounts can ONLY send from onboarding@resend.dev
+        from_domain = self.from_email.split('@')[-1] if '@' in self.from_email else ''
+        if from_domain in ('gmail.com', 'honeycloud.com', 'honeycloud.local', 'example.com', 'test.com', 'startup.com', ''):
+            sender = f"{self.from_name} <onboarding@resend.dev>"
+        else:
+            sender = f"{self.from_name} <{self.from_email}>"
+            
+        payload = {
+            "from": sender,
+            "to": to_emails,
+            "subject": subject,
+            "html": html_body,
+            "text": text_body or "This is a HoneyCloud Security notification."
+        }
+        
+        # Attachments handling
+        if attachments:
+            payload_attachments = []
+            for file_path in attachments:
+                if os.path.exists(file_path):
+                    try:
+                        with open(file_path, "rb") as f:
+                            content_bytes = f.read()
+                            encoded_content = base64.b64encode(content_bytes).decode("utf-8")
+                        payload_attachments.append({
+                            "content": encoded_content,
+                            "filename": os.path.basename(file_path)
+                        })
+                    except Exception as e:
+                        logger.error(f"Failed to encode attachment for Resend: {e}")
+                else:
+                    logger.warning(f"Attachment file not found: {file_path}")
+            if payload_attachments:
+                payload["attachments"] = payload_attachments
+                
+        # Send request with retries
+        for attempt in range(1, self.max_retries + 1):
+            try:
+                response = requests.post(url, json=payload, headers=headers, timeout=15)
+                if response.status_code in (200, 201):
+                    logger.info(f"✅ Email delivered successfully via Resend to {', '.join(to_emails)}")
+                    return True
+                else:
+                    logger.error(f"⚠️ Resend API returned error (Attempt {attempt}/{self.max_retries}): {response.status_code} - {response.text}")
+            except Exception as e:
+                logger.error(f"⚠️ Resend HTTP request attempt {attempt} failed: {e}")
+                
+            if attempt < self.max_retries:
+                sleep_time = self.retry_delay ** attempt
+                logger.info(f"Backing off for {sleep_time} seconds before retry...")
+                time.sleep(sleep_time)
+                
+        logger.error("❌ Resend delivery failed after maximum retries.")
+        return False
+
     def send_email_sync(
         self,
         to_emails: List[str],
@@ -76,6 +154,9 @@ class EmailService:
         if not to_emails:
             logger.error("No recipient email address provided.")
             return False
+            
+        if settings.resend_api_key:
+            return self.send_via_resend(to_emails, subject, html_body, text_body, attachments)
             
         msg = MIMEMultipart('alternative')
         msg['From'] = f"{self.from_name} <{self.from_email}>"
