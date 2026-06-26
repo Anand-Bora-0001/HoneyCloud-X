@@ -12,6 +12,7 @@ const Reports = () => {
   const [compiling, setCompiling] = useState(false);
   const [compileFormat, setCompileFormat] = useState('pdf');
   const [sendTelegram, setSendTelegram] = useState(false);
+  const [limit, setLimit] = useState(100);
   const [archives, setArchives] = useState([]);
 
   const loadStats = async () => {
@@ -67,7 +68,7 @@ const Reports = () => {
   const handleGenerate = async () => {
     setCompiling(true);
     try {
-      const res = await apiCall(`/api/reports/generate?format=${compileFormat}&send_telegram=${sendTelegram}`, {
+      const res = await apiCall(`/api/reports/generate?format=${compileFormat}&send_telegram=${sendTelegram}&limit=${limit}`, {
         method: 'POST'
       });
 
@@ -191,6 +192,22 @@ const Reports = () => {
                 <span className="text-slate-500 text-xxs mt-0.5">Sends PDF/Excel binary output to configured bot chat rooms</span>
               </div>
             </label>
+
+            {/* Event Limit Picker */}
+            <div className="flex flex-col gap-2 mt-2">
+              <span className="text-slate-400 text-xxs font-bold uppercase tracking-wider">Number of Events to Include</span>
+              <select
+                value={limit}
+                onChange={(e) => setLimit(Number(e.target.value))}
+                className="bg-slate-950/60 border border-slate-800 text-slate-300 rounded-lg p-3 text-sm focus:border-amber-500/50 focus:outline-none transition-colors appearance-none cursor-pointer"
+              >
+                <option value={10}>Last 10 Events</option>
+                <option value={50}>Last 50 Events</option>
+                <option value={100}>Last 100 Events</option>
+                <option value={500}>Last 500 Events</option>
+                <option value={1000}>Last 1000 Events</option>
+              </select>
+            </div>
           </div>
 
           <button

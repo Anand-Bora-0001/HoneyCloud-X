@@ -20,6 +20,7 @@ router = APIRouter(prefix="/api/reports", tags=["Reports"])
 def generate_report(
     format: str = "csv",
     send_telegram: bool = False,
+    limit: int = 100,
     current_user: dict = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
@@ -46,8 +47,9 @@ def generate_report(
             user = db.query(User).filter(User.username == current_user["username"]).first()
             if user:
                 db_events = db.query(AttackEvent).filter(
-                    AttackEvent.organization_id == user.organization_id
-                ).order_by(AttackEvent.timestamp.desc()).limit(100).all()
+                    AttackEvent.organization_id == user.organization_id,
+                    AttackEvent.is_deleted == False
+                ).order_by(AttackEvent.timestamp.desc()).limit(limit).all()
                 report_events = [{
                     "id": e.id, "timestamp": e.timestamp.isoformat() if e.timestamp else None,
                     "service": e.service_name, "source_ip": e.source_ip,
@@ -58,9 +60,9 @@ def generate_report(
                     "threat_score": e.threat_score, "location": e.location
                 } for e in db_events]
             else:
-                report_events = attack_events
+                report_events = attack_events[:limit]
         except Exception:
-            report_events = attack_events
+            report_events = attack_events[:limit]
 
         # Trigger background generation
         from ...tasks.report_tasks import generate_report_async
