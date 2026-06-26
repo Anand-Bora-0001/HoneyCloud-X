@@ -86,6 +86,30 @@ def generate_pdf_report(events: List[dict], stats: dict, filename: str = None) -
         return _generate_text_report(events, stats, text_filename)
 
 
+def _format_risk_score(severity: str, raw_score: float) -> str:
+    """Format the risk score into logical buckets based on severity."""
+    severity = str(severity).upper() if severity else "UNKNOWN"
+    
+    if raw_score is None:
+        raw_score = 0.5
+    elif raw_score > 1.0:
+        raw_score = min(1.0, raw_score / 100.0)
+        
+    if severity == 'CRITICAL':
+        score = 80 + int(raw_score * 20)
+    elif severity == 'HIGH':
+        score = 60 + int(raw_score * 20)
+    elif severity == 'MEDIUM':
+        score = 30 + int(raw_score * 30)
+    elif severity == 'LOW':
+        score = 10 + int(raw_score * 20)
+    else:
+        score = int(raw_score * 100)
+        
+    score = min(100, max(0, score))
+    return f"{score}/100"
+
+
 def _generate_actual_pdf(events: List[dict], stats: dict, filename: str) -> str:
     """Generate actual PDF using reportlab (premium SOC dark theme)"""
     try:
@@ -213,12 +237,7 @@ def _generate_actual_pdf(events: List[dict], stats: dict, filename: str) -> str:
                     formatted_time = 'N/A'
                     
                 threat_score = event.get('threat_score', 0.0)
-                if threat_score is None:
-                    risk_score = "50/100"
-                elif threat_score > 1.0:
-                    risk_score = f"{int(min(100.0, threat_score))}/100"
-                else:
-                    risk_score = f"{int(min(100.0, threat_score * 100))}/100"
+                risk_score = _format_risk_score(event.get('severity', ''), threat_score)
                 
                 events_data.append([
                     formatted_time,
@@ -380,12 +399,8 @@ def _generate_single_incident_pdf(event: dict, filename: str) -> str:
     
     # Risk Score Formatting
     threat_score = event.get('threat_score', 0.0)
-    if threat_score is None:
-        risk_score = 50
-    elif threat_score > 1.0:
-        risk_score = int(min(100.0, threat_score))
-    else:
-        risk_score = int(min(100.0, threat_score * 100))
+    risk_score_str = _format_risk_score(severity, threat_score)
+    risk_score = int(risk_score_str.split('/')[0])
         
     # MITRE ATT&CK Resolution
     mitre_tech = "T1595 - Active Scanning"
