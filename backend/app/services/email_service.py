@@ -271,7 +271,12 @@ class EmailService:
         
         # Risk score calculation
         threat_score = event_data.get('threat_score', 0.0)
-        risk_score = int(threat_score * 100) if threat_score is not None else 50
+        if threat_score is None:
+            risk_score = 50
+        elif threat_score > 1.0:
+            risk_score = int(min(100.0, threat_score))
+        else:
+            risk_score = int(min(100.0, threat_score * 100))
         
         # Determine MITRE technique based on endpoint / payload
         mitre_tech = "T1595 - Active Scanning"
@@ -414,7 +419,12 @@ class EmailService:
         """Generates plain text fallback copy of alert email"""
         location = event_data.get('location', {})
         threat_score = event_data.get('threat_score', 0.0)
-        risk_score = int(threat_score * 100) if threat_score is not None else 50
+        if threat_score is None:
+            risk_score = 50
+        elif threat_score > 1.0:
+            risk_score = int(min(100.0, threat_score))
+        else:
+            risk_score = int(min(100.0, threat_score * 100))
         persona = event_data.get('persona') or "Scanner"
         
         text = f"""

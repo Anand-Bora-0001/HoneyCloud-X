@@ -282,10 +282,10 @@ def handle_attack_event(event: dict, db: Session = None) -> None:
         if send_mail and recipients:
             pdf_path = None
             try:
-                from .report_generator import generate_pdf_report
-                pdf_path = generate_pdf_report([event], {'total_events': 1, 'events_by_severity': {severity: 1}})
+                from .report_generator import generate_incident_report_pdf
+                pdf_path = generate_incident_report_pdf(event)
             except Exception as e:
-                logger.error(f"Failed to generate PDF report: {e}")
+                logger.error(f"Failed to generate incident PDF report: {e}")
                 
             if CELERY_AVAILABLE:
                 send_email_alert_async.delay(
