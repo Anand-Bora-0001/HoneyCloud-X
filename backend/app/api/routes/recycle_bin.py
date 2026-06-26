@@ -79,6 +79,12 @@ def restore_items(
     db.add(audit)
     db.commit()
         
+    try:
+        from ...core.cache import cache_delete_pattern
+        cache_delete_pattern("stats:*")
+    except Exception:
+        pass
+        
     return {"status": "success", "restored": restored_count}
 
 @router.delete("/permanent")
@@ -128,5 +134,11 @@ def permanent_delete(
     )
     db.add(audit)
     db.commit()
+    
+    try:
+        from ...core.cache import cache_delete_pattern
+        cache_delete_pattern("stats:*")
+    except Exception:
+        pass
 
     return {"status": "success", "permanently_deleted": deleted_count}

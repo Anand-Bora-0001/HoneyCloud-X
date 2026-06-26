@@ -291,7 +291,7 @@ class EmailService:
         persona = event_data.get('persona') or "Scanner"
         
         # Dashboard link configuration
-        dashboard_url = os.getenv("FRONTEND_URL", "http://127.0.0.1:8000") + "/dashboard.html"
+        dashboard_url = os.getenv("FRONTEND_URL", "http://127.0.0.1:8000") + "/dashboard"
         
         html = f"""
         <!DOCTYPE html>

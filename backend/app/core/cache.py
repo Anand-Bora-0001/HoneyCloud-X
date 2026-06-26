@@ -130,6 +130,24 @@ def cache_delete(key: str) -> int:
     except Exception as e:
         logger.warning(f"Cache DELETE error: {e}")
         return _fallback_cache.delete(key)
+def cache_delete_pattern(pattern: str) -> int:
+    """Delete keys matching pattern from cache"""
+    try:
+        if _using_redis and _redis_client:
+            keys = _redis_client.keys(pattern)
+            if keys:
+                return _redis_client.delete(*keys)
+            return 0
+        else:
+            keys = _fallback_cache.keys(pattern)
+            count = 0
+            for k in keys:
+                count += _fallback_cache.delete(k)
+            return count
+    except Exception as e:
+        logger.warning(f"Cache DELETE pattern error: {e}")
+        return 0
+
 
 
 def cache_flush():

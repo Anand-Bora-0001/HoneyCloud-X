@@ -216,6 +216,15 @@ elif _VANILLA_DIR.exists():
     async def serve_dashboard():
         return FileResponse(str(_VANILLA_DIR / "dashboard.html"))
 
+    @app.get("/dashboard")
+    async def serve_dashboard_clean():
+        return FileResponse(str(_VANILLA_DIR / "dashboard.html"))
+
+    @app.get("/login")
+    async def serve_login_clean():
+        return FileResponse(str(_VANILLA_DIR / "login.html"))
+
+
     @app.get("/attack-details.html")
     async def serve_attack_details():
         return FileResponse(str(_VANILLA_DIR / "attack-details.html"))

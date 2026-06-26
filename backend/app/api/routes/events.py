@@ -212,6 +212,11 @@ def process_event_async(event: Dict, source_ip: str, org_id: int, service_id: in
         logger.error(f"❌ Background processing failed: {e}")
     finally:
         db.close()
+        try:
+            from ...core.cache import cache_delete_pattern
+            cache_delete_pattern("stats:*")
+        except Exception as cache_err:
+            logger.warning(f"Failed to invalidate stats cache: {cache_err}")
 
 
 @router.post("/ingest")
@@ -434,8 +439,8 @@ def clear_events(
 
         # Invalidate stats cache
         try:
-            from ...core.cache import cache_delete
-            cache_delete(f"stats:{current_user['username']}")
+            from ...core.cache import cache_delete_pattern
+            cache_delete_pattern("stats:*")
         except Exception:
             pass
             
@@ -486,8 +491,14 @@ def archive_old_events(
                 records_removed=total,
                 details={"events": events_archived, "investigations": inv_archived}
             )
-            db.add(audit)
             db.commit()
+            
+        # Invalidate stats cache
+        try:
+            from ...core.cache import cache_delete_pattern
+            cache_delete_pattern("stats:*")
+        except Exception:
+            pass
             
         return {"status": "success", "archived": total}
     except Exception as e:
@@ -811,8 +822,8 @@ async def simulate_attacks(
         broadcaster.broadcast(new_event)
 
     try:
-        from ...core.cache import cache_delete
-        cache_delete(f"stats:{current_user['username']}")
+        from ...core.cache import cache_delete_pattern
+        cache_delete_pattern("stats:*")
     except Exception:
         pass
 
