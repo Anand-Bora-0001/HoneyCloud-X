@@ -166,24 +166,26 @@ const RecycleBin = () => {
             Review soft-deleted threat analytics logs. Restore accidental deletions or purge databases.
           </p>
         </div>
-        <div className="flex gap-2">
-          <button
-            onClick={handleRestoreAll}
-            disabled={items.length === 0}
-            className="bg-slate-800 hover:bg-slate-750 text-slate-300 border border-slate-700 px-3.5 py-1.8 rounded-lg text-xs font-semibold flex items-center gap-1.5 cursor-pointer disabled:opacity-40"
-          >
-            <RotateCcw size={13} />
-            Restore All
-          </button>
-          <button
-            onClick={handleEmptyBin}
-            disabled={items.length === 0}
-            className="bg-rose-500/10 hover:bg-rose-500 text-rose-500 hover:text-slate-950 border border-rose-500/20 px-3.5 py-1.8 rounded-lg text-xs font-semibold flex items-center gap-1.5 cursor-pointer disabled:opacity-40"
-          >
-            <AlertOctagon size={13} />
-            Empty Recycle Bin
-          </button>
-        </div>
+        {selectedItems.length === 0 && (
+          <div className="flex gap-2">
+            <button
+              onClick={handleRestoreAll}
+              disabled={items.length === 0}
+              className="bg-slate-800 hover:bg-slate-750 text-slate-300 border border-slate-700 px-3.5 py-1.8 rounded-lg text-xs font-semibold flex items-center gap-1.5 cursor-pointer disabled:opacity-40"
+            >
+              <RotateCcw size={13} />
+              Restore All
+            </button>
+            <button
+              onClick={handleEmptyBin}
+              disabled={items.length === 0}
+              className="bg-rose-500/10 hover:bg-rose-500 text-rose-500 hover:text-slate-950 border border-rose-500/20 px-3.5 py-1.8 rounded-lg text-xs font-semibold flex items-center gap-1.5 cursor-pointer disabled:opacity-40"
+            >
+              <AlertOctagon size={13} />
+              Empty Recycle Bin
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Selected Items Bulk Actions Banner */}
