@@ -205,8 +205,8 @@ def process_event_async(event: Dict, source_ip: str, org_id: int, service_id: in
                 from ...alert_system import handle_attack_event
                 enriched_event['organization_id'] = db_event.organization_id
                 handle_attack_event(enriched_event, db)
-            except Exception:
-                pass
+            except Exception as alert_err:
+                logger.error(f"Failed to handle attack event alerts: {alert_err}")
 
     except Exception as e:
         logger.error(f"❌ Background processing failed: {e}")
