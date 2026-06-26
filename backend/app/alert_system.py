@@ -237,6 +237,8 @@ def handle_attack_event(event: dict, db: Session = None) -> None:
                     telegram_enabled = config.telegram_enabled
                     email_enabled = config.email_enabled
                     recipients = config.email_addresses or []
+                    if not recipients and settings.alert_email_to:
+                        recipients = [settings.alert_email_to]
                     alert_on_critical = config.alert_on_critical
                     alert_on_high = config.alert_on_high
                     alert_on_medium = config.alert_on_medium
