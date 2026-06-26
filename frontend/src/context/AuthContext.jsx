@@ -19,8 +19,9 @@ export const AuthProvider = ({ children }) => {
   
   const eventSourceRef = useRef(null);
 
-  // Expose base API path (could be configured via proxy in dev)
-  const apiBase = '';
+  // Expose base API path. We use absolute URL in production to bypass Render's rewrite proxy
+  // which buffers responses and breaks SSE (Server-Sent Events).
+  const apiBase = import.meta.env.PROD ? 'https://honeycloud-backend.onrender.com' : '';
 
   const logout = () => {
     localStorage.removeItem('hc_token');
@@ -147,7 +148,7 @@ export const AuthProvider = ({ children }) => {
 
     const connectSse = () => {
       // Connect to the stream endpoint
-      const es = new EventSource(`/api/events/stream?token=${token}`);
+      const es = new EventSource(`${apiBase}/api/events/stream?token=${token}`);
       eventSourceRef.current = es;
 
       es.onopen = () => {
