@@ -32,6 +32,20 @@ services:
         value: "1"
       - key: PYTHON_VERSION
         value: "3.11.0"
+      - key: EMAIL_ENABLED
+        value: "true"
+      - key: SMTP_SERVER
+        value: "smtp.gmail.com"
+      - key: SMTP_PORT
+        value: "587"
+      - key: SMTP_USERNAME
+        value: "cloudaaga13@gmail.com"
+      - key: SMTP_PASSWORD
+        value: "ftklzhwjdhchktjg"
+      - key: ALERT_EMAIL_TO
+        value: "cloudaaga13@gmail.com"
+      - key: ALERT_EMAIL_FROM
+        value: "cloudaaga13@gmail.com"
 
   # Frontend Static Site
   - type: web
