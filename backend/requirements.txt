@@ -39,9 +39,6 @@ imbalanced-learn==0.11.0
 
 # Enhancement Module Dependencies
 # Deep Learning (Optional - for advanced threat detection)
-tensorflow==2.15.0
-torch==2.1.2
-torchvision==0.16.2
 
 # Advanced Analytics
 plotly==5.17.0
