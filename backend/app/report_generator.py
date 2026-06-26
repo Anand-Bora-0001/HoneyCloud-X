@@ -87,113 +87,168 @@ def generate_pdf_report(events: List[dict], stats: dict, filename: str = None) -
 
 
 def _generate_actual_pdf(events: List[dict], stats: dict, filename: str) -> str:
-    """Generate actual PDF using reportlab (if available)"""
+    """Generate actual PDF using reportlab (premium SOC dark theme)"""
     try:
-        from reportlab.lib.pagesizes import letter, A4
+        from reportlab.lib.pagesizes import A4
         from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
         from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
-        from reportlab.lib.units import inch
         from reportlab.lib import colors
         
-        doc = SimpleDocTemplate(filename, pagesize=A4)
+        doc = SimpleDocTemplate(
+            filename, 
+            pagesize=A4,
+            leftMargin=36, rightMargin=36,
+            topMargin=36, bottomMargin=36
+        )
         styles = getSampleStyleSheet()
         story = []
         
-        # Title
-        title_style = ParagraphStyle(
-            'CustomTitle',
-            parent=styles['Heading1'],
-            fontSize=24,
-            spaceAfter=30,
-            textColor=colors.darkblue
-        )
-        story.append(Paragraph("🍯 HoneyCloud Security Report", title_style))
-        story.append(Spacer(1, 12))
+        # Custom Palette
+        brand_dark = colors.HexColor('#0f172a')
+        card_bg = colors.HexColor('#1e293b')
+        accent_blue = colors.HexColor('#38bdf8')
+        text_light = colors.HexColor('#f8fafc')
+        text_slate = colors.HexColor('#e2e8f0')
+        text_muted = colors.HexColor('#94a3b8')
         
-        # Metadata
-        story.append(Paragraph(f"<b>Generated:</b> {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}", styles['Normal']))
-        story.append(Paragraph(f"<b>Total Events:</b> {stats.get('total_events', 0)}", styles['Normal']))
+        # Title Styles
+        title_style = ParagraphStyle(
+            'BannerTitle',
+            parent=styles['Heading1'],
+            fontName='Helvetica-Bold',
+            fontSize=22,
+            textColor=accent_blue,
+            alignment=1,
+            spaceAfter=4
+        )
+        
+        subtitle_style = ParagraphStyle(
+            'BannerSub',
+            parent=styles['Normal'],
+            fontName='Helvetica',
+            fontSize=10,
+            textColor=text_muted,
+            alignment=1,
+            spaceAfter=15
+        )
+        
+        section_heading = ParagraphStyle(
+            'SectionHeading',
+            parent=styles['Heading2'],
+            fontName='Helvetica-Bold',
+            fontSize=14,
+            textColor=accent_blue,
+            spaceBefore=12,
+            spaceAfter=8,
+            borderColor=accent_blue,
+            borderWidth=0.5,
+            borderPadding=4
+        )
+        
+        # Header Banner block
+        banner_data = [
+            [Paragraph("🍯 HoneyCloud SOC Comprehensive Report", title_style)],
+            [Paragraph(f"Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S UTC')}", subtitle_style)]
+        ]
+        banner_table = Table(banner_data, colWidths=[523])
+        banner_table.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (-1, -1), brand_dark),
+            ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+            ('BOTTOMPADDING', (0, 0), (-1, -1), 10),
+            ('TOPPADDING', (0, 0), (-1, -1), 15),
+            ('BOX', (0, 0), (-1, -1), 2, accent_blue),
+        ]))
+        story.append(banner_table)
         story.append(Spacer(1, 20))
         
         # Executive Summary
-        story.append(Paragraph("Executive Summary", styles['Heading2']))
+        story.append(Paragraph("📊 EXECUTIVE SUMMARY", section_heading))
         
         # Statistics Table
-        stats_data = [['Metric', 'Count']]
+        stats_data = [['Metric', 'Value']]
+        stats_data.append(["Total Attack Events", str(stats.get('total_events', 0))])
         
         # Add service stats
         for service, count in stats.get('events_by_service', {}).items():
             stats_data.append([f"Service: {service}", str(count)])
-        
+            
         # Add severity stats
         for severity, count in stats.get('events_by_severity', {}).items():
             stats_data.append([f"Severity: {severity}", str(count)])
-        
-        # Add AI classification stats
-        for label, count in stats.get('ai_labels', {}).items():
-            stats_data.append([f"AI Label: {label}", str(count)])
-        
+            
         if len(stats_data) > 1:
-            stats_table = Table(stats_data)
+            stats_table = Table(stats_data, colWidths=[300, 223])
             stats_table.setStyle(TableStyle([
-                ('BACKGROUND', (0, 0), (-1, 0), colors.grey),
-                ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+                ('BACKGROUND', (0, 0), (-1, 0), brand_dark),
+                ('TEXTCOLOR', (0, 0), (-1, 0), accent_blue),
                 ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
                 ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
-                ('FONTSIZE', (0, 0), (-1, 0), 14),
-                ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
-                ('BACKGROUND', (0, 1), (-1, -1), colors.beige),
-                ('GRID', (0, 0), (-1, -1), 1, colors.black)
+                ('FONTSIZE', (0, 0), (-1, 0), 12),
+                ('BOTTOMPADDING', (0, 0), (-1, 0), 8),
+                ('TOPPADDING', (0, 0), (-1, 0), 8),
+                ('BACKGROUND', (0, 1), (-1, -1), card_bg),
+                ('TEXTCOLOR', (0, 1), (-1, -1), text_slate),
+                ('GRID', (0, 0), (-1, -1), 0.5, colors.HexColor('#334155')),
+                ('ROWBACKGROUNDS', (0, 1), (-1, -1), [card_bg, brand_dark])
             ]))
             story.append(stats_table)
-        
-        story.append(Spacer(1, 20))
+            
+        story.append(Spacer(1, 25))
         
         # Recent Events
-        story.append(Paragraph("Recent Attack Events (Last 10)", styles['Heading2']))
+        story.append(Paragraph("🚨 RECENT ATTACK EVENTS (Last 15)", section_heading))
         
         if events:
-            events_data = [['Time', 'Service', 'Source IP', 'Severity', 'Threat Score']]
+            events_data = [['Time (UTC)', 'Service', 'Source IP', 'Severity', 'Risk']]
             
-            for event in events[:10]:
+            for event in events[:15]:
                 timestamp = event.get('timestamp', '')
                 if timestamp:
                     try:
-                        # Format timestamp
                         dt = datetime.fromisoformat(timestamp.replace('Z', '+00:00'))
                         formatted_time = dt.strftime('%m/%d %H:%M')
                     except:
                         formatted_time = timestamp[:16]
                 else:
                     formatted_time = 'N/A'
+                    
+                threat_score = event.get('threat_score', 0.0)
+                if threat_score is None:
+                    risk_score = "50/100"
+                elif threat_score > 1.0:
+                    risk_score = f"{int(min(100.0, threat_score))}/100"
+                else:
+                    risk_score = f"{int(min(100.0, threat_score * 100))}/100"
                 
                 events_data.append([
                     formatted_time,
                     event.get('service', 'N/A')[:15],
                     event.get('source_ip', 'N/A'),
                     event.get('severity', 'N/A'),
-                    f"{event.get('threat_score', 0):.2f}"
+                    risk_score
                 ])
-            
-            events_table = Table(events_data)
+                
+            events_table = Table(events_data, colWidths=[90, 120, 110, 103, 100])
             events_table.setStyle(TableStyle([
-                ('BACKGROUND', (0, 0), (-1, 0), colors.darkblue),
-                ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+                ('BACKGROUND', (0, 0), (-1, 0), brand_dark),
+                ('TEXTCOLOR', (0, 0), (-1, 0), accent_blue),
                 ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
                 ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
-                ('FONTSIZE', (0, 0), (-1, 0), 12),
-                ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
-                ('BACKGROUND', (0, 1), (-1, -1), colors.lightgrey),
-                ('GRID', (0, 0), (-1, -1), 1, colors.black),
+                ('FONTSIZE', (0, 0), (-1, 0), 11),
+                ('BOTTOMPADDING', (0, 0), (-1, 0), 8),
+                ('TOPPADDING', (0, 0), (-1, 0), 8),
+                ('BACKGROUND', (0, 1), (-1, -1), card_bg),
+                ('TEXTCOLOR', (0, 1), (-1, -1), text_slate),
+                ('GRID', (0, 0), (-1, -1), 0.5, colors.HexColor('#334155')),
                 ('FONTSIZE', (0, 1), (-1, -1), 10),
+                ('ROWBACKGROUNDS', (0, 1), (-1, -1), [card_bg, brand_dark])
             ]))
             story.append(events_table)
         else:
             story.append(Paragraph("No recent events to display.", styles['Normal']))
-        
-        # Build PDF
+            
         doc.build(story)
-        logger.info(f"✅ PDF report generated: {filename}")
+        logger.info(f"✅ Premium PDF report generated: {filename}")
         return filename
         
     except ImportError as e:
