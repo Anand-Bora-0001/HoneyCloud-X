@@ -58,7 +58,7 @@ const Login = () => {
             />
           </div>
           <h1 className="text-2xl font-bold tracking-tight text-slate-100 flex items-center gap-1.5 font-sans">
-            HoneyCloud<span className="text-amber-500">-X</span>
+            HoneyCloud
           </h1>
           <p className="text-slate-400 text-xs mt-1.5 font-medium uppercase tracking-wider">
             Honeypot SOC Intelligence Console
@@ -159,7 +159,7 @@ const Login = () => {
       {/* Footer Info */}
       <div className="absolute bottom-4 left-0 right-0 text-center pointer-events-none select-none z-10">
         <span className="text-slate-600 text-xxs font-mono uppercase tracking-widest">
-          HoneyCloud Systems v3.0 • Academic Portfolio
+          &copy; {new Date().getFullYear()} HoneyCloud Systems. All Rights Reserved.
         </span>
       </div>
     </div>
