@@ -144,6 +144,13 @@ const Dashboard = () => {
     };
   }, [loading]);
 
+  // Clear map markers when events data is empty
+  useEffect(() => {
+    if (events.length === 0 && markersGroupRef.current) {
+      markersGroupRef.current.clearLayers();
+    }
+  }, [events]);
+
   const addMapPing = (event, animate) => {
     const map = mapRef.current;
     const markersGroup = markersGroupRef.current;
