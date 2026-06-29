@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="frontend/public/logo.png" alt="HoneyCloud Logo" width="200"/>
+  <img src="assets/logo.png" alt="HoneyCloud Logo" width="200"/>
   <h1>🍯 HoneyCloud</h1>
   <h3>Next-Generation AI-Powered Honeypot & SOC Intelligence Platform</h3>
   
@@ -107,6 +107,10 @@ HoneyCloud is built on a modern, decoupled microservices architecture.
 7. The **React Frontend** pulls the data for SOC analysts.
 
 ### Component Diagram
+
+<div align="center">
+  <img src="assets/architecture.png" alt="System Architecture Diagram"/>
+</div>
 
 ```text
 [ Attacker ]
