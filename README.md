@@ -574,5 +574,5 @@ HoneyCloud supports various topologies depending on enterprise needs:
 
 <br>
 <div align="center">
-  <b>Built with ❤️ for the Cybersecurity Community by Anand and Ganesh.git show --format=fuller a34138d</b>
+  <b>Built with ❤️ for the Cybersecurity Community by Anand and Ganesh.</b>
 </div>
