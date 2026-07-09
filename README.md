@@ -506,7 +506,7 @@ docker run -p 8000:8000 --env-file .env honeycloud
 - **Data Isolation:** Attack data is strictly segregated from configuration data.
 - **Immutable Logs:** Attack events are designed to be append-only. Deletions are soft-deletes (`is_deleted = True`) to maintain audit trails.
 - **JWT Security:** Tokens expire hourly and require strong signatures.
-- **MITRE ATT&CK:** Alerts are mapped directly to MITRE tactics (e.g., `T1595 - Active Scanning`) to assist in compliance reporting.
+- **MITRE ATT&CK:** Alerts are mapped directly to MITRE tactics (e.g., `T1595 - Active Scanning`) to assist you in compliance reporting.
 
 ---
 
@@ -574,5 +574,5 @@ HoneyCloud supports various topologies depending on enterprise needs:
 
 <br>
 <div align="center">
-  <b>Built with ❤️ for the Cybersecurity Community by Anand and Ganesh.</b>
+  <b>Built with ❤️ for the Cybersecurity Community by Anand and Ganesh.git show --format=fuller a34138d</b>
 </div>
