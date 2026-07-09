@@ -573,6 +573,8 @@ HoneyCloud supports various topologies depending on enterprise needs:
 - **High Availability (HA):** Backend scaled via Kubernetes, Redis for Celery task queuing, and PostgreSQL for distributed data consistency.
 
 <br>
+
 <div align="center">
-  <b>Built with ❤️ for the Cybersecurity Community by Anand and Ganesh.</b>
+  <b>Built with ❤️ for the Cybersecurity Community.</b><br>
+  <sub>Co-authored by <b>Anand Bora</b> and <b>Ganesh Kambli</b>.</sub>
 </div>
