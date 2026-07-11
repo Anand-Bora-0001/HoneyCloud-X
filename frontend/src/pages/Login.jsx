@@ -90,7 +90,7 @@ const Login = () => {
                 id="login-username"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
-                placeholder="operator_auth"
+                placeholder="admin"
                 className="w-full bg-slate-950/80 border border-slate-800 text-slate-200 placeholder-slate-600 pl-11 pr-4 py-2.5 rounded-xl text-sm focus:outline-none focus:border-amber-500/50 transition-colors font-mono"
                 required
                 disabled={submitting}
@@ -113,7 +113,7 @@ const Login = () => {
                 id="login-password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                placeholder="••••••••••••"
+                placeholder="admin123"
                 className="w-full bg-slate-950/80 border border-slate-800 text-slate-200 placeholder-slate-600 pl-11 pr-4 py-2.5 rounded-xl text-sm focus:outline-none focus:border-amber-500/50 transition-colors font-mono"
                 required
                 disabled={submitting}
